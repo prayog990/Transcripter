@@ -1,184 +1,355 @@
 <!DOCTYPE html>
 <html lang="hi">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AJ Transcript AI</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AJ Smart Transcript Tool</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text-main: #111827;
+            --text-sub: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+        }
 
-<style>
-body{
-font-family:Arial, sans-serif;
-background:#0f172a;
-color:white;
-display:flex;
-justify-content:center;
-padding:20px;
-}
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
-.container{
-max-width:900px;
-width:100%;
-}
+        body {
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
 
-input{
-width:70%;
-padding:12px;
-border-radius:8px;
-border:none;
-font-size:16px;
-}
+        .app-container {
+            width: 100%;
+            max-width: 900px;
+        }
 
-button{
-padding:12px 18px;
-border:none;
-border-radius:8px;
-background:#6366f1;
-color:white;
-font-weight:bold;
-cursor:pointer;
-}
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
 
-#resultBox{
-margin-top:20px;
-background:#111827;
-padding:20px;
-border-radius:10px;
-min-height:300px;
-white-space:pre-wrap;
-display:none;
-}
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+        }
 
-#status{
-margin-top:10px;
-color:#9ca3af;
-}
-</style>
+        .header p {
+            color: var(--text-sub);
+            margin-top: 5px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .input-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0 24px;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        /* Result Section */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            display: none; /* Hidden by default */
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .btn-copy {
+            background: #f9fafb;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-copy:hover {
+            background: #f3f4f6;
+        }
+
+        .transcript-box {
+            width: 100%;
+            min-height: 350px;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            line-height: 1.8;
+            font-size: 16px;
+            background: #fafafa;
+            outline: none;
+            display: none; /* Hidden by default */
+            white-space: pre-wrap;
+        }
+
+        .transcript-box:focus {
+            background: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Status & Loader */
+        #status-msg {
+            text-align: center;
+            font-size: 14px;
+            margin: 10px 0;
+            color: var(--text-sub);
+        }
+
+        .loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e5e7eb;
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 10px auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); }
+            to { transform: translateY(0); }
+        }
+    </style>
 </head>
-
 <body>
-<div class="container">
 
-<h2>AJ Transcript AI</h2>
+<div class="app-container">
+    <div class="header">
+        <h1>AJ Transcript AI</h1>
+        <p>यूट्यूब वीडियो की सटीक ट्रांसक्रिप्ट निकालें</p>
+    </div>
 
-<input id="ytUrl" placeholder="Paste YouTube link">
-<button onclick="fetchTranscript()">Fetch Text</button>
+    <div class="card">
+        <div class="input-section">
+            <div class="input-wrapper">
+                <input type="text" id="ytUrl" placeholder="Paste YouTube link (Watch, Live or Shorts)...">
+            </div>
+            <button id="btnFetch" class="btn-primary" onclick="fetchTranscript()">Fetch Text</button>
+        </div>
 
-<div id="status">Ready…</div>
+        <div id="status-msg">तैयार हैं! बस लिंक डालिए।</div>
+        <div class="loader" id="loader"></div>
 
-<div id="resultBox"></div>
-
+        <div class="result-header" id="resHeader">
+            <span class="result-title">Transcript Result:</span>
+            <button class="btn-copy" onclick="copyText()">
+                <span>📋</span> Copy Text
+            </button>
+        </div>
+        
+        <!-- Interactive Transcript Area -->
+        <div id="resultBox" class="transcript-box" contenteditable="true" spellcheck="false"></div>
+    </div>
 </div>
 
+<div id="toast" class="toast">Copied to clipboard!</div>
+
 <script>
+async function fetchTranscript() {
+    const urlInput = document.getElementById('ytUrl').value.trim();
+    const statusMsg = document.getElementById('status-msg');
+    const resultBox = document.getElementById('resultBox');
+    const resHeader = document.getElementById('resHeader');
+    const loader = document.getElementById('loader');
+    const btn = document.getElementById('btnFetch');
 
-// ================= FETCH =================
-async function fetchTranscript(){
+    if (!urlInput) return;
 
-const urlInput =
-document.getElementById("ytUrl").value.trim();
+    const videoId = extractVideoId(urlInput);
+    if (!videoId) {
+        showStatus("❌ Invalid URL", "#ef4444");
+        return;
+    }
 
-if(!urlInput) return;
+    loader.style.display = "block";
+    btn.disabled = true;
+    resultBox.style.display = "none";
+    resHeader.style.display = "none";
 
-const videoId = extractVideoId(urlInput);
+    // CORS Proxy
+    const proxy = "https://api.allorigins.win/raw?url=";
 
-if(!videoId){
-showStatus("❌ Invalid URL");
-return;
+    // Instances list
+    const instances = [
+        "https://yewtu.be",
+        "https://vid.puffyan.us",
+        "https://inv.nadeko.net",
+        "https://invidious.tiekoetter.com",
+        "https://invidious.privacydev.net"
+    ];
+
+    let success = false;
+
+    for (let base of instances) {
+        try {
+            showStatus("Connecting server...", "#6b7280");
+
+            const apiUrl = `${base}/api/v1/captions/${videoId}`;
+            const resp = await fetch(proxy + encodeURIComponent(apiUrl));
+
+            if (!resp.ok) continue;
+
+            const data = await resp.json();
+            if (!data.captions || data.captions.length === 0) continue;
+
+            const track = data.captions.find(c =>
+                c.label.toLowerCase().includes("english")
+            ) || data.captions[0];
+
+            showStatus(`Fetching: ${track.label}`, "#4f46e5");
+
+            const textResp = await fetch(
+                proxy + encodeURIComponent(base + track.url)
+            );
+
+            const raw = await textResp.text();
+
+            resultBox.innerText = cleanSubs(raw);
+            resultBox.style.display = "block";
+            resHeader.style.display = "flex";
+            showStatus("✅ Transcript fetched!", "#10b981");
+
+            success = true;
+            break;
+
+        } catch (err) {
+            console.log("Instance failed");
+        }
+    }
+
+    if (!success) {
+        showStatus(
+            "❌ Transcript unavailable / Server blocked",
+            "#ef4444"
+        );
+    }
+
+    loader.style.display = "none";
+    btn.disabled = false;
 }
 
-showStatus("Fetching transcript…");
-
-try{
-
-const proxy = "https://corsproxy.io/?";
-
-const captionUrl =
-`https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`;
-
-const resp = await fetch(
-proxy + encodeURIComponent(captionUrl)
-);
-
-const raw = await resp.text();
-
-const finalText = parseTranscript(raw);
-
-if(!finalText) throw new Error();
-
-document.getElementById("resultBox").innerText =
-finalText;
-
-document.getElementById("resultBox").style.display =
-"block";
-
-showStatus("✅ Transcript fetched!");
-
-}catch{
-
-showStatus("❌ Captions not available");
-
+// Clean captions
+function cleanSubs(text) {
+    return text
+        .replace(/WEBVTT/g, "")
+        .replace(/\d{2}:\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}:\d{2}.\d{3}/g, "")
+        .replace(/<[^>]*>/g, "")
+        .replace(/\n+/g, " ")
+        .trim();
 }
 
+// Extract video ID
+function extractVideoId(url) {
+    const reg =
+        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(reg);
+    return match ? match[1] : null;
 }
 
-// ================= PARSER =================
-function parseTranscript(raw){
-
-// XML captions
-if(raw.includes("<text")){
-
-const parser = new DOMParser();
-const xmlDoc =
-parser.parseFromString(raw,"text/xml");
-
-const texts =
-xmlDoc.getElementsByTagName("text");
-
-let result="";
-
-for(let i=0;i<texts.length;i++){
-result += texts[i].textContent + " ";
+function showStatus(msg, color) {
+    const el = document.getElementById("status-msg");
+    el.textContent = msg;
+    el.style.color = color;
 }
 
-return result.trim();
+function copyText() {
+    const text = document.getElementById("resultBox").innerText;
+    navigator.clipboard.writeText(text);
 }
-
-// JSON captions
-try{
-const json = JSON.parse(raw);
-
-if(Array.isArray(json)){
-return json.map(x=>x.text).join(" ");
-}
-}catch{}
-
-// VTT fallback
-return raw
-.replace(/WEBVTT/g,"")
-.replace(/\d{2}:\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}:\d{2}.\d{3}/g,"")
-.replace(/<[^>]*>/g,"")
-.replace(/\n+/g," ")
-.trim();
-
-}
-
-// ================= VIDEO ID =================
-function extractVideoId(url){
-
-const reg =
-/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-
-const match = url.match(reg);
-
-return match ? match[1] : null;
-
-}
-
-// ================= STATUS =================
-function showStatus(msg){
-document.getElementById("status").innerText = msg;
-}
-
 </script>
 
 </body>
