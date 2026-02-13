@@ -147,15 +147,17 @@
             min-height: 350px;
             max-height: 600px;
             overflow-y: auto;
-            border: 1px solid var(--border);
+            border: 2px solid var(--primary);
             border-radius: 10px;
             padding: 20px;
             line-height: 1.8;
             font-size: 16px;
-            background: #fafafa;
+            background: #ffffff !important; /* Force white background */
+            color: #1a1a1a !important;    /* Force dark text color */
             outline: none;
-            display: none; /* Hidden by default */
+            display: none;
             white-space: pre-wrap;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
         .transcript-box:focus {
@@ -296,9 +298,17 @@ async function fetchTranscript() {
                 proxy + encodeURIComponent(base + track.url)
             );
 
-            const raw = await textResp.text();
+            let raw = await textResp.text();
 
-            resultBox.innerText = cleanSubs(raw);
+            // AJ Fix: Better Cleaning and Validation
+            let cleanedText = cleanSubs(raw);
+            
+            if (cleanedText.length < 10) {
+                 console.log("Cleaning too aggressive, trying raw fallback");
+                 cleanedText = raw.replace(/<[^>]*>/g, " ").replace(/\n+/g, " ");
+            }
+
+            resultBox.innerText = cleanedText;
             resultBox.style.display = "block";
             resHeader.style.display = "flex";
             showStatus("✅ Transcript fetched!", "#10b981");
@@ -307,28 +317,30 @@ async function fetchTranscript() {
             break;
 
         } catch (err) {
-            console.log("Instance failed");
+            console.error("Instance failed:", err);
         }
     }
 
     if (!success) {
-        showStatus(
-            "❌ Transcript unavailable / Server blocked",
-            "#ef4444"
-        );
+        showStatus("❌ Transcript Fetch Failed - Please try another link", "#ef4444");
     }
 
     loader.style.display = "none";
     btn.disabled = false;
 }
 
-// Clean captions
 function cleanSubs(text) {
+    if(!text) return "";
     return text
-        .replace(/WEBVTT/g, "")
-        .replace(/\d{2}:\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}:\d{2}.\d{3}/g, "")
-        .replace(/<[^>]*>/g, "")
-        .replace(/\n+/g, " ")
+        .replace(/WEBVTT/g, "") // Remove VTT Header
+        .replace(/Kind: captions/g, "")
+        .replace(/Language: .*/g, "")
+        .replace(/\d{2}:\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}:\d{2}.\d{3}/g, "") // Full timestamps
+        .replace(/\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}.\d{3}/g, "") // Short timestamps
+        .replace(/<[^>]*>/g, "") // HTML tags
+        .replace(/\n\d+\n/g, " ") // SRT numbering
+        .replace(/\n+/g, " ") // Extra newlines to spaces
+        .replace(/\s\s+/g, ' ') // Multiple spaces to single
         .trim();
 }
 
