@@ -239,158 +239,73 @@
 <div id="toast" class="toast">Copied to clipboard!</div>
 
 <script>
-    // AJ Internal Version: 1.1
-    
-    // AJ Internal Version: 1.5 (Invidious API Engine - Best Stability)
-    async function fetchTranscript() {
-        const urlInput = document.getElementById('ytUrl').value.trim();
-        const statusMsg = document.getElementById('status-msg');
-        const resultBox = document.getElementById('resultBox');
-        const resHeader = document.getElementById('resHeader');
-        const loader = document.getElementById('loader');
-        const btn = document.getElementById('btnFetch');
+async function fetchTranscript() {
 
-        if(!urlInput) return;
-        const videoId = extractVideoId(urlInput);
-        if (!videoId) {
-            showStatus("❌ Invalid URL", "#ef4444");
-            return;
+    const urlInput = document.getElementById('ytUrl').value.trim();
+    const resultBox = document.getElementById('resultBox');
+    const resHeader = document.getElementById('resHeader');
+    const loader = document.getElementById('loader');
+    const btn = document.getElementById('btnFetch');
+
+    if (!urlInput) return;
+
+    const videoId = extractVideoId(urlInput);
+    if (!videoId) {
+        showStatus("❌ Invalid URL", "#ef4444");
+        return;
+    }
+
+    loader.style.display = "block";
+    btn.disabled = true;
+
+    try {
+
+        // Direct YouTube Caption XML
+        const url =
+        `https://corsproxy.io/?https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`;
+
+        const resp = await fetch(url);
+        const xml = await resp.text();
+
+        if (!xml || xml.includes("Transcript not available")) {
+            throw new Error();
         }
 
-        resultBox.style.display = "none";
-        resHeader.style.display = "none";
-        loader.style.display = "block";
-        btn.disabled = true;
+        const text = parseXml(xml);
 
-        // Public Invidious Instances (Reliable for Captions)
-        const instances = [
-            "https://inv.tux.pizza",
-            "https://invidious.flokinet.to",
-            "https://iv.melmac.space",
-            "https://invidious.sethforprivacy.com"
-        ];
+        resultBox.innerText = text;
+        resultBox.style.display = "block";
+        resHeader.style.display = "flex";
 
-        let success = false;
-        for (let baseUrl of instances) {
-            try {
-                showStatus(`Connecting to Server...`, "#6b7280");
-                // Fetch captions list
-                const resp = await fetch(`${baseUrl}/api/v1/captions/${videoId}`);
-                if (!resp.ok) continue;
+        showStatus("✅ Transcript fetched!", "#10b981");
 
-                const captions = await resp.json();
-                if (!captions.captions || captions.captions.length === 0) {
-                    showStatus("❌ No transcript for this video.", "#ef4444");
-                    break;
-                }
+    } catch {
 
-                // Pick English or first available
-                const track = captions.captions.find(c => c.label.includes("English")) || captions.captions[0];
-                
-                showStatus(`Fetching: ${track.label}...`, "#4f46e5");
-
-                // Get the actual text
-                const textResp = await fetch(`${baseUrl}${track.url}`);
-                const rawText = await textResp.text();
-
-                resultBox.innerText = cleanInvidiousSubs(rawText);
-                resultBox.style.display = "block";
-                resHeader.style.display = "flex";
-                showStatus("✅ Success!", "#10b981");
-                success = true;
-                break;
-            } catch (e) {
-                console.warn("Instance failed, trying next...");
-            }
-        }
-
-        if (!success && statusMsg.textContent.indexOf("No transcript") === -1) {
-            showStatus("❌ Connection Timeout: प्लीज अपना नेट चेक करें या दोबारा दबाएं।", "#ef4444");
-        }
-        loader.style.display = "none";
-        btn.disabled = false;
+        showStatus(
+        "❌ Captions disabled / Video unsupported",
+        "#ef4444"
+        );
     }
 
-    function cleanInvidiousSubs(text) {
-        // Simple logic to clean SRT/VTT format from Invidious
-        return text
-            .replace(/\d+\n\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}/g, "") // SRT
-            .replace(/WEBVTT\n\n\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3}/g, "") // VTT
-            .replace(/<[^>]*>/g, "") // Tags
-            .replace(/\n+/g, " ") // New lines to space
-            .trim();
+    loader.style.display = "none";
+    btn.disabled = false;
+}
+
+
+// XML → Text
+function parseXml(xml) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xml, "text/xml");
+    const texts = xmlDoc.getElementsByTagName("text");
+
+    let result = "";
+
+    for (let i = 0; i < texts.length; i++) {
+        result += texts[i].textContent + " ";
     }
 
-    function extractVideoId(url) {
-        const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/(?:shorts|live)\/)([a-zA-Z0-9_-]{11})/;
-        const match = url.match(regex);
-        return match ? match[1] : null;
-    }
-
-    function parseXmlTranscript(xml) {
-        // Simple XML tag stripping logic
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(xml, "text/xml");
-        const texts = xmlDoc.getElementsByTagName("text");
-        let result = "";
-        for (let i = 0; i < texts.length; i++) {
-            // Unescape HTML entities (like &#39; to ')
-            const txt = texts[i].textContent.replace(/&amp;/g, '&')
-                                            .replace(/&lt;/g, '<')
-                                            .replace(/&gt;/g, '>')
-                                            .replace(/&quot;/g, '"')
-                                            .replace(/&#39;/g, "'");
-            result += txt + " ";
-        }
-        return result.trim().replace(/\s+/g, ' ');
-    }
-
-    function parseTranscript(rawText) {
-        // Cleaning logic for VTT/JSON
-        let text = "";
-        try {
-            const json = JSON.parse(rawText);
-            if (Array.isArray(json)) {
-                return json.map(item => item.text).join(" ");
-            }
-        } catch (e) {}
-
-        text = rawText.replace(/WEBVTT/g, "")
-                      .replace(/(\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3})/g, "")
-                      .replace(/(\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}\.\d{3})/g, "")
-                      .replace(/<[^>]*>/g, "")
-                      .replace(/.*:\d+%.*/g, "");
-
-        const lines = text.split('\n')
-                          .map(l => l.trim())
-                          .filter(l => l !== "" && isNaN(l));
-
-        // Basic duplicate line removal
-        const unique = [];
-        for(let i=0; i<lines.length; i++) {
-            if(lines[i] !== lines[i-1]) unique.push(lines[i]);
-        }
-        return unique.join(" ");
-    }
-
-    function showStatus(msg, color) {
-        const statusMsg = document.getElementById('status-msg');
-        statusMsg.textContent = msg;
-        statusMsg.style.color = color;
-    }
-
-    function varName(name) {
-        return getComputedStyle(document.documentElement).getPropertyValue(name);
-    }
-
-    function copyText() {
-        const text = document.getElementById('resultBox').innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            const toast = document.getElementById('toast');
-            toast.style.display = "block";
-            setTimeout(() => { toast.style.display = "none"; }, 2000);
-        });
-    }
+    return result.replace(/\s+/g, " ").trim();
+}
 </script>
 
 </body>
