@@ -1,268 +1,363 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AJ Transcript Tool</title>
+    <title>AJ Smart Transcript Tool</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #2563eb;
-            --bg: #f8fafc;
-            --surface: #ffffff;
-            --text: #1e293b;
-            --border: #e2e8f0;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --bg: #f3f4f6;
+            --card: #ffffff;
+            --text-main: #111827;
+            --text-sub: #6b7280;
+            --border: #e5e7eb;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
-            color: var(--text);
+            color: var(--text-main);
             margin: 0;
             padding: 20px;
             display: flex;
-            flex-direction: column;
-            align-items: center;
+            justify-content: center;
             min-height: 100vh;
         }
 
-        .container {
+        .app-container {
             width: 100%;
-            max-width: 800px;
-            background: var(--surface);
-            padding: 2rem;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
         }
 
-        h1 {
+        .header {
             text-align: center;
-            color: var(--primary);
-            margin-bottom: 1.5rem;
-            font-size: 1.5rem;
+            margin-bottom: 2rem;
         }
 
-        .input-group {
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .header p {
+            color: var(--text-sub);
+            margin-top: 5px;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            border: 1px solid var(--border);
+        }
+
+        .input-section {
             display: flex;
-            gap: 10px;
+            gap: 12px;
             margin-bottom: 20px;
         }
 
-        input[type="text"] {
+        .input-wrapper {
             flex: 1;
-            padding: 12px;
+            position: relative;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 16px;
             border: 2px solid var(--border);
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 16px;
             outline: none;
-            transition: border-color 0.3s;
+            transition: all 0.2s;
         }
 
         input[type="text"]:focus {
             border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
         }
 
-        button {
+        .btn-primary {
             background-color: var(--primary);
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
+            padding: 0 24px;
+            border-radius: 10px;
             font-weight: 600;
+            cursor: pointer;
             transition: background 0.2s;
+            white-space: nowrap;
         }
 
-        button:hover {
-            background-color: #1d4ed8;
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
         }
 
-        button:disabled {
-            background-color: #94a3b8;
+        .btn-primary:disabled {
+            opacity: 0.7;
             cursor: not-allowed;
         }
 
+        /* Result Section */
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            display: none; /* Hidden by default */
+        }
+
+        .result-title {
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .btn-copy {
+            background: #f9fafb;
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .btn-copy:hover {
+            background: #f3f4f6;
+        }
+
+        .transcript-box {
+            width: 100%;
+            min-height: 350px;
+            max-height: 600px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            line-height: 1.8;
+            font-size: 16px;
+            background: #fafafa;
+            outline: none;
+            display: none; /* Hidden by default */
+            white-space: pre-wrap;
+        }
+
+        .transcript-box:focus {
+            background: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Status & Loader */
         #status-msg {
             text-align: center;
-            margin-bottom: 15px;
             font-size: 14px;
-            color: #64748b;
-            min-height: 20px;
+            margin: 10px 0;
+            color: var(--text-sub);
         }
 
-        .output-area {
-            width: 100%;
-            min-height: 300px;
-            padding: 15px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background-color: #fff;
-            font-size: 16px;
-            line-height: 1.6;
-            white-space: pre-wrap;
-            box-sizing: border-box;
-            display: none; /* Initially hidden */
-        }
-
-        .loading-spinner {
+        .loader {
             display: none;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid var(--primary);
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e5e7eb;
+            border-top-color: var(--primary);
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
+            margin: 10px auto;
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            display: none;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); }
+            to { transform: translateY(0); }
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>YouTube Transcript Generator</h1>
-        
-        <div class="input-group">
-            <input type="text" id="ytUrl" placeholder="Paste YouTube Link here...">
-            <button id="btnFetch" onclick="fetchTranscript()">Get Transcript</button>
-        </div>
-
-        <div id="status-msg"></div>
-        <div class="loading-spinner" id="loader"></div>
-        
-        <!-- Result Box -->
-        <div id="resultBox" class="output-area"></div>
+<div class="app-container">
+    <div class="header">
+        <h1>AJ Transcript AI</h1>
+        <p>यूट्यूब वीडियो की सटीक ट्रांसक्रिप्ट निकालें</p>
     </div>
 
-    <script>
-        // AJ: Internal State - Memory for Future
-        // Current Version: 1.0
+    <div class="card">
+        <div class="input-section">
+            <div class="input-wrapper">
+                <input type="text" id="ytUrl" placeholder="Paste YouTube link (Watch, Live or Shorts)...">
+            </div>
+            <button id="btnFetch" class="btn-primary" onclick="fetchTranscript()">Fetch Text</button>
+        </div>
+
+        <div id="status-msg">तैयार हैं! बस लिंक डालिए।</div>
+        <div class="loader" id="loader"></div>
+
+        <div class="result-header" id="resHeader">
+            <span class="result-title">Transcript Result:</span>
+            <button class="btn-copy" onclick="copyText()">
+                <span>📋</span> Copy Text
+            </button>
+        </div>
         
-        async function fetchTranscript() {
-            const urlInput = document.getElementById('ytUrl').value;
-            const statusMsg = document.getElementById('status-msg');
-            const resultBox = document.getElementById('resultBox');
-            const loader = document.getElementById('loader');
-            const btn = document.getElementById('btnFetch');
+        <!-- Interactive Transcript Area -->
+        <div id="resultBox" class="transcript-box" contenteditable="true" spellcheck="false"></div>
+    </div>
+</div>
 
-            // Reset UI
-            statusMsg.textContent = "";
-            resultBox.style.display = "none";
-            resultBox.innerText = "";
-            
-            // Extract Video ID
-            const videoId = extractVideoId(urlInput);
-            if (!videoId) {
-                statusMsg.textContent = "Invalid YouTube URL";
-                statusMsg.style.color = "red";
-                return;
-            }
+<div id="toast" class="toast">Copied to clipboard!</div>
 
-            // Start Loading
-            loader.style.display = "block";
-            btn.disabled = true;
-            statusMsg.textContent = "Fetching metadata...";
-            statusMsg.style.color = "#64748b";
+<script>
+    // AJ Internal Version: 1.1
+    
+    async function fetchTranscript() {
+        const urlInput = document.getElementById('ytUrl').value.trim();
+        const statusMsg = document.getElementById('status-msg');
+        const resultBox = document.getElementById('resultBox');
+        const resHeader = document.getElementById('resHeader');
+        const loader = document.getElementById('loader');
+        const btn = document.getElementById('btnFetch');
 
-            try {
-                // 1. Get Video Metadata from Piped API
-                const metaUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
-                const response = await fetch(metaUrl);
-                
-                if (!response.ok) throw new Error("Failed to fetch video data");
-                const data = await response.json();
+        if(!urlInput) return;
 
-                // 2. Find Subtitles (Priority: English -> Auto-generated English)
-                const subtitles = data.subtitles;
-                if (!subtitles || subtitles.length === 0) {
-                    throw new Error("No subtitles found for this video.");
-                }
-
-                // Filter for English (or create logic for Hindi later)
-                let selectedTrack = subtitles.find(s => s.code === 'en' && !s.autoGenerated) || 
-                                    subtitles.find(s => s.code === 'en') ||
-                                    subtitles[0]; // Fallback to first available
-
-                statusMsg.textContent = `Downloading transcript (${selectedTrack.name})...`;
-
-                // 3. Fetch the actual subtitle text (VTT/JSON format)
-                const trackResponse = await fetch(selectedTrack.url);
-                const trackText = await trackResponse.text();
-
-                // 4. Clean and Parse VTT/XML to plain text
-                const cleanText = parseTranscript(trackText);
-
-                // Display Result
-                resultBox.innerText = cleanText;
-                resultBox.style.display = "block";
-                statusMsg.textContent = "Done!";
-                statusMsg.style.color = "green";
-
-            } catch (error) {
-                console.error(error);
-                statusMsg.textContent = "Error: " + error.message;
-                statusMsg.style.color = "red";
-            } finally {
-                loader.style.display = "none";
-                btn.disabled = false;
-            }
+        // Extract Video ID with Updated Regex (Supports Live/Shorts/Mobile)
+        const videoId = extractVideoId(urlInput);
+        
+        if (!videoId) {
+            showStatus("अवैध लिंक! कृपया सही YouTube URL डालें।", "#ef4444");
+            return;
         }
 
-        function extractVideoId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
+        // Reset UI
+        resultBox.style.display = "none";
+        resHeader.style.display = "none";
+        loader.style.display = "block";
+        btn.disabled = true;
+        showStatus("Video डेटा ढूँढ रहे हैं...", "#6b7280");
 
-        function parseTranscript(rawText) {
-            // Basic VTT/JSON cleaner. 
-            // Piped sometimes returns JSON for subs, sometimes VTT based on format.
-            // This is a basic VTT stripper logic.
+        try {
+            // Using Piped API (Mirroring logic for stability)
+            const metaUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
+            const response = await fetch(metaUrl);
             
-            try {
-                // If it's JSON (sometimes Piped returns JSON array)
-                const jsonCheck = JSON.parse(rawText);
-                if (Array.isArray(jsonCheck)) {
-                     // Filter out events without text and join
-                    return jsonCheck.map(item => item.text).join(" ");
-                }
-            } catch (e) {
-                // Not JSON, assume VTT/SRT format
+            if (!response.ok) throw new Error("वीडियो डेटा नहीं मिला।");
+            const data = await response.json();
+
+            if (!data.subtitles || data.subtitles.length === 0) {
+                throw new Error("इस वीडियो में ट्रांसक्रिप्ट उपलब्ध नहीं है।");
             }
 
-            // Remove VTT header
-            let text = rawText.replace(/WEBVTT/g, "");
-            
-            // Remove timestamps (00:00:00.000 --> 00:00:00.000)
-            text = text.replace(/(\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3})/g, "");
-            text = text.replace(/(\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}\.\d{3})/g, ""); // Short format
-            
-            // Remove formatting tags like <c.color> or <b>
-            text = text.replace(/<[^>]*>/g, "");
-            
-            // Remove specific VTT positioning lines (align:start position:0%)
-            text = text.replace(/.*:\d+%.*/g, "");
-            
-            // Remove empty lines and join
-            const lines = text.split('\n');
-            const cleanLines = lines.map(l => l.trim()).filter(l => l !== "" && !Number.isInteger(Number(l)));
-            
-            // Remove duplicates that often appear in rolling captions
-            const uniqueLines = [];
-            if(cleanLines.length > 0) uniqueLines.push(cleanLines[0]);
-            
-            for(let i=1; i<cleanLines.length; i++) {
-                if(cleanLines[i] !== cleanLines[i-1]) {
-                    uniqueLines.push(cleanLines[i]);
-                }
-            }
+            // Priority: English (Manual) -> English (Auto) -> First Available
+            let selectedTrack = data.subtitles.find(s => s.code === 'en' && !s.autoGenerated) || 
+                                data.subtitles.find(s => s.code === 'en') ||
+                                data.subtitles[0];
 
-            return uniqueLines.join(" ");
+            showStatus(`डाउनलोडिंग: ${selectedTrack.name}...`, varName("--primary"));
+
+            const trackResponse = await fetch(selectedTrack.url);
+            const trackText = await trackResponse.text();
+
+            // Clean Transcript
+            const cleanText = parseTranscript(trackText);
+
+            // Display Results
+            resultBox.innerText = cleanText;
+            resultBox.style.display = "block";
+            resHeader.style.display = "flex";
+            showStatus("सफलतापूर्वक जनरेट किया गया!", "#10b981");
+
+        } catch (error) {
+            showStatus("त्रुटि: " + error.message, "#ef4444");
+        } finally {
+            loader.style.display = "none";
+            btn.disabled = false;
         }
-    </script>
+    }
+
+    function extractVideoId(url) {
+        const regExp = /^.*(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=|shorts\/|live\/)([^#&?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[1].length === 11) ? match[1] : null;
+    }
+
+    function parseTranscript(rawText) {
+        // Cleaning logic for VTT/JSON
+        let text = "";
+        try {
+            const json = JSON.parse(rawText);
+            if (Array.isArray(json)) {
+                return json.map(item => item.text).join(" ");
+            }
+        } catch (e) {}
+
+        text = rawText.replace(/WEBVTT/g, "")
+                      .replace(/(\d{2}:\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}:\d{2}\.\d{3})/g, "")
+                      .replace(/(\d{2}:\d{2}\.\d{3} --> \d{2}:\d{2}\.\d{3})/g, "")
+                      .replace(/<[^>]*>/g, "")
+                      .replace(/.*:\d+%.*/g, "");
+
+        const lines = text.split('\n')
+                          .map(l => l.trim())
+                          .filter(l => l !== "" && isNaN(l));
+
+        // Basic duplicate line removal
+        const unique = [];
+        for(let i=0; i<lines.length; i++) {
+            if(lines[i] !== lines[i-1]) unique.push(lines[i]);
+        }
+        return unique.join(" ");
+    }
+
+    function showStatus(msg, color) {
+        const statusMsg = document.getElementById('status-msg');
+        statusMsg.textContent = msg;
+        statusMsg.style.color = color;
+    }
+
+    function varName(name) {
+        return getComputedStyle(document.documentElement).getPropertyValue(name);
+    }
+
+    function copyText() {
+        const text = document.getElementById('resultBox').innerText;
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = document.getElementById('toast');
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 2000);
+        });
+    }
+</script>
+
 </body>
 </html>
