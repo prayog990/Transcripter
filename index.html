@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AJ Smart Transcript Tool - V1.7</title>
+    <title>AJ Smart Transcript Tool</title>
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -15,9 +15,13 @@
             --text-main: #111827;
             --text-sub: #6b7280;
             --border: #e5e7eb;
+            --success: #10b981;
         }
 
-        * { box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        * {
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
 
         body {
             background-color: var(--bg);
@@ -29,11 +33,27 @@
             min-height: 100vh;
         }
 
-        .app-container { width: 100%; max-width: 900px; }
+        .app-container {
+            width: 100%;
+            max-width: 900px;
+        }
 
-        .header { text-align: center; margin-bottom: 2rem; }
-        .header h1 { font-size: 2rem; font-weight: 700; color: var(--primary); margin: 0; }
-        .header p { color: var(--text-sub); margin-top: 5px; }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin: 0;
+        }
+
+        .header p {
+            color: var(--text-sub);
+            margin-top: 5px;
+        }
 
         .card {
             background: var(--card);
@@ -43,8 +63,16 @@
             border: 1px solid var(--border);
         }
 
-        .input-section { display: flex; gap: 12px; margin-bottom: 20px; }
-        .input-wrapper { flex: 1; }
+        .input-section {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
 
         input[type="text"] {
             width: 100%;
@@ -56,7 +84,10 @@
             transition: all 0.2s;
         }
 
-        input[type="text"]:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1); }
+        input[type="text"]:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
 
         .btn-primary {
             background-color: var(--primary);
@@ -67,10 +98,17 @@
             font-weight: 600;
             cursor: pointer;
             transition: background 0.2s;
+            white-space: nowrap;
         }
 
-        .btn-primary:hover { background-color: var(--primary-hover); }
-        .btn-primary:disabled { opacity: 0.7; cursor: not-allowed; }
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
 
         /* Result Section */
         .result-header {
@@ -80,21 +118,28 @@
             margin-bottom: 12px;
             padding-top: 20px;
             border-top: 1px solid var(--border);
-            display: none;
+            display: none; /* Hidden by default */
         }
 
-        .result-title { font-weight: 600; color: var(--text-main); }
+        .result-title {
+            font-weight: 600;
+            color: var(--text-main);
+        }
 
         .btn-copy {
             background: #f9fafb;
             border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 13px;
             cursor: pointer;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
+        }
+
+        .btn-copy:hover {
+            background: #f3f4f6;
         }
 
         .transcript-box {
@@ -103,19 +148,30 @@
             max-height: 600px;
             overflow-y: auto;
             border: 2px solid var(--primary);
-            border-radius: 12px;
+            border-radius: 10px;
             padding: 20px;
             line-height: 1.8;
-            font-size: 17px;
-            background: #ffffff !important; /* Force White */
-            color: #111827 !important;    /* Force Black */
+            font-size: 16px;
+            background: #ffffff !important; /* Force white background */
+            color: #1a1a1a !important;    /* Force dark text color */
             outline: none;
             display: none;
             white-space: pre-wrap;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
         }
 
-        #status-msg { text-align: center; font-size: 14px; margin: 10px 0; font-weight: 500; }
+        .transcript-box:focus {
+            background: #fff;
+            border-color: var(--primary);
+        }
+
+        /* Status & Loader */
+        #status-msg {
+            text-align: center;
+            font-size: 14px;
+            margin: 10px 0;
+            color: var(--text-sub);
+        }
 
         .loader {
             display: none;
@@ -128,18 +184,26 @@
             margin: 10px auto;
         }
 
-        @keyframes spin { to { transform: rotate(360deg); } }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
 
+        /* Toast Notification */
         .toast {
             position: fixed;
             bottom: 20px;
             right: 20px;
-            background: #111827;
+            background: #333;
             color: white;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
             display: none;
-            z-index: 100;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100px); }
+            to { transform: translateY(0); }
         }
     </style>
 </head>
@@ -154,7 +218,7 @@
     <div class="card">
         <div class="input-section">
             <div class="input-wrapper">
-                <input type="text" id="ytUrl" placeholder="यूट्यूब लिंक यहाँ पेस्ट करें...">
+                <input type="text" id="ytUrl" placeholder="Paste YouTube link (Watch, Live or Shorts)...">
             </div>
             <button id="btnFetch" class="btn-primary" onclick="fetchTranscript()">Fetch Text</button>
         </div>
@@ -164,132 +228,140 @@
 
         <div class="result-header" id="resHeader">
             <span class="result-title">Transcript Result:</span>
-            <button class="btn-copy" onclick="copyText()">📋 Copy Text</button>
+            <button class="btn-copy" onclick="copyText()">
+                <span>📋</span> Copy Text
+            </button>
         </div>
         
+        <!-- Interactive Transcript Area -->
         <div id="resultBox" class="transcript-box" contenteditable="true" spellcheck="false"></div>
     </div>
 </div>
 
-<div id="toast" class="toast">कॉपी कर लिया गया!</div>
+<div id="toast" class="toast">Copied to clipboard!</div>
 
 <script>
-    // AJ Master Logic V1.7
-    async function fetchTranscript() {
-        const urlInput = document.getElementById('ytUrl').value.trim();
-        const statusMsg = document.getElementById('status-msg');
-        const resultBox = document.getElementById('resultBox');
-        const resHeader = document.getElementById('resHeader');
-        const loader = document.getElementById('loader');
-        const btn = document.getElementById('btnFetch');
+async function fetchTranscript() {
+    const urlInput = document.getElementById('ytUrl').value.trim();
+    const statusMsg = document.getElementById('status-msg');
+    const resultBox = document.getElementById('resultBox');
+    const resHeader = document.getElementById('resHeader');
+    const loader = document.getElementById('loader');
+    const btn = document.getElementById('btnFetch');
 
-        if (!urlInput) return;
+    if (!urlInput) return;
 
-        const videoId = extractVideoId(urlInput);
-        if (!videoId) {
-            showStatus("❌ अवैध लिंक! सही URL डालें।", "#ef4444");
-            return;
-        }
+    const videoId = extractVideoId(urlInput);
+    if (!videoId) {
+        showStatus("❌ Invalid URL", "#ef4444");
+        return;
+    }
 
-        // Reset UI
-        resultBox.style.display = "none";
-        resHeader.style.display = "none";
-        loader.style.display = "block";
-        btn.disabled = true;
+    loader.style.display = "block";
+    btn.disabled = true;
+    resultBox.style.display = "none";
+    resHeader.style.display = "none";
 
-        const proxy = "https://api.allorigins.win/raw?url=";
-        const instances = [
-            "https://vid.puffyan.us",
-            "https://yewtu.be",
-            "https://inv.nadeko.net",
-            "https://invidious.tiekoetter.com"
-        ];
+    // CORS Proxy
+    const proxy = "https://api.allorigins.win/raw?url=";
 
-        let success = false;
+    // Instances list
+    const instances = [
+        "https://yewtu.be",
+        "https://vid.puffyan.us",
+        "https://inv.nadeko.net",
+        "https://invidious.tiekoetter.com",
+        "https://invidious.privacydev.net"
+    ];
 
-        for (let base of instances) {
-            try {
-                showStatus(`Connecting to Engine...`, "#6b7280");
-                
-                const apiUrl = `${base}/api/v1/captions/${videoId}`;
-                const resp = await fetch(proxy + encodeURIComponent(apiUrl));
-                if (!resp.ok) continue;
+    let success = false;
 
-                const data = await resp.json();
-                if (!data.captions || data.captions.length === 0) continue;
+    for (let base of instances) {
+        try {
+            showStatus("Connecting server...", "#6b7280");
 
-                // Priority: English -> First available
-                const track = data.captions.find(c => c.label.toLowerCase().includes("english")) || data.captions[0];
-                
-                showStatus(`Fetching: ${track.label}...`, "#4f46e5");
+            const apiUrl = `${base}/api/v1/captions/${videoId}`;
+            const resp = await fetch(proxy + encodeURIComponent(apiUrl));
 
-                const textResp = await fetch(proxy + encodeURIComponent(base + track.url));
-                const rawData = await textResp.text();
+            if (!resp.ok) continue;
 
-                // CLEANING PROCESS
-                let finalOutput = cleanSubs(rawData);
+            const data = await resp.json();
+            if (!data.captions || data.captions.length === 0) continue;
 
-                // If cleaning udaya everything, fallback to raw cleaning
-                if(finalOutput.length < 10) {
-                    finalOutput = rawData.replace(/<[^>]*>/g, " ").replace(/\n+/g, " ").trim();
-                }
+            const track = data.captions.find(c =>
+                c.label.toLowerCase().includes("english")
+            ) || data.captions[0];
 
-                resultBox.innerText = finalOutput;
-                resultBox.style.display = "block";
-                resHeader.style.display = "flex";
-                showStatus("✅ Transcript fetched successfully!", "#10b981");
+            showStatus(`Fetching: ${track.label}`, "#4f46e5");
 
-                success = true;
-                break;
-            } catch (err) {
-                console.warn("Instance failed, trying next...");
+            const textResp = await fetch(
+                proxy + encodeURIComponent(base + track.url)
+            );
+
+            let raw = await textResp.text();
+
+            // AJ Fix: Better Cleaning and Validation
+            let cleanedText = cleanSubs(raw);
+            
+            if (cleanedText.length < 10) {
+                 console.log("Cleaning too aggressive, trying raw fallback");
+                 cleanedText = raw.replace(/<[^>]*>/g, " ").replace(/\n+/g, " ");
             }
+
+            resultBox.innerText = cleanedText;
+            resultBox.style.display = "block";
+            resHeader.style.display = "flex";
+            showStatus("✅ Transcript fetched!", "#10b981");
+
+            success = true;
+            break;
+
+        } catch (err) {
+            console.error("Instance failed:", err);
         }
-
-        if (!success) {
-            showStatus("❌ सभी सर्वर व्यस्त हैं या ट्रांसक्रिप्ट उपलब्ध नहीं है।", "#ef4444");
-        }
-
-        loader.style.display = "none";
-        btn.disabled = false;
     }
 
-    function cleanSubs(text) {
-        if (!text) return "";
-        return text
-            .replace(/WEBVTT/g, "")
-            .replace(/Kind: captions/g, "")
-            .replace(/Language: .*/g, "")
-            // Catch timestamps with dots or commas (00:00:00.000 or 00:00:00,000)
-            .replace(/\d{1,2}:\d{2}:\d{2}[.,]\d{3} --> \d{1,2}:\d{2}:\d{2}[.,]\d{3}/g, "")
-            .replace(/\d{2}:\d{2}[.,]\d{3} --> \d{2}:\d{2}[.,]\d{3}/g, "")
-            .replace(/<[^>]*>/g, "") // Tags
-            .replace(/^\d+$/gm, "")  // SRT numbers
-            .replace(/\n+/g, " ")    // Extra lines
-            .replace(/\s\s+/g, ' ')  // Double spaces
-            .trim();
+    if (!success) {
+        showStatus("❌ Transcript Fetch Failed - Please try another link", "#ef4444");
     }
 
-    function extractVideoId(url) {
-        const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/|youtube\.com\/(?:shorts|live)\/)([a-zA-Z0-9_-]{11})/;
-        const match = url.match(regExp);
-        return (match && match[1]) ? match[1] : null;
-    }
+    loader.style.display = "none";
+    btn.disabled = false;
+}
 
-    function showStatus(msg, color) {
-        const el = document.getElementById("status-msg");
-        el.textContent = msg;
-        el.style.color = color;
-    }
+function cleanSubs(text) {
+    if(!text) return "";
+    return text
+        .replace(/WEBVTT/g, "") // Remove VTT Header
+        .replace(/Kind: captions/g, "")
+        .replace(/Language: .*/g, "")
+        .replace(/\d{2}:\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}:\d{2}.\d{3}/g, "") // Full timestamps
+        .replace(/\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}.\d{3}/g, "") // Short timestamps
+        .replace(/<[^>]*>/g, "") // HTML tags
+        .replace(/\n\d+\n/g, " ") // SRT numbering
+        .replace(/\n+/g, " ") // Extra newlines to spaces
+        .replace(/\s\s+/g, ' ') // Multiple spaces to single
+        .trim();
+}
 
-    function copyText() {
-        const text = document.getElementById("resultBox").innerText;
-        navigator.clipboard.writeText(text).then(() => {
-            const toast = document.getElementById('toast');
-            toast.style.display = "block";
-            setTimeout(() => { toast.style.display = "none"; }, 2000);
-        });
-    }
+// Extract video ID
+function extractVideoId(url) {
+    const reg =
+        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(reg);
+    return match ? match[1] : null;
+}
+
+function showStatus(msg, color) {
+    const el = document.getElementById("status-msg");
+    el.textContent = msg;
+    el.style.color = color;
+}
+
+function copyText() {
+    const text = document.getElementById("resultBox").innerText;
+    navigator.clipboard.writeText(text);
+}
 </script>
 
 </body>
