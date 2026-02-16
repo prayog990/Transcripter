@@ -241,7 +241,7 @@
 <script>
     // AJ Internal Version: 1.1
     
-    // AJ Internal Version: 1.3 (CORS Proxy + Direct YouTube Logic)
+    // AJ Internal Version: 1.4 (Dual-Proxy Failover System)
     async function fetchTranscript() {
         const urlInput = document.getElementById('ytUrl').value.trim();
         const statusMsg = document.getElementById('status-msg');
@@ -254,7 +254,7 @@
 
         const videoId = extractVideoId(urlInput);
         if (!videoId) {
-            showStatus("❌ अवैध लिंक!", "#ef4444");
+            showStatus("❌ Invalid YouTube URL", "#ef4444");
             return;
         }
 
@@ -262,45 +262,66 @@
         resHeader.style.display = "none";
         loader.style.display = "block";
         btn.disabled = true;
-        showStatus("Fetching via Proxy...", "#6b7280");
+
+        // Try Proxy 1 then Proxy 2
+        const proxies = [
+            (id) => `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + id)}`,
+            (id) => `https://corsproxy.io/?${encodeURIComponent('https://www.youtube.com/watch?v=' + id)}`
+        ];
+
+        let html = "";
+        let success = false;
+
+        for (let i = 0; i < proxies.length; i++) {
+            try {
+                showStatus(`Fetching (Attempt ${i+1})...`, "#6b7280");
+                const response = await fetch(proxies[i](videoId));
+                const data = await response.json();
+                // AllOrigins gives data.contents, corsproxy might give text directly
+                html = data.contents || data; 
+                
+                if (html && html.includes("captionTracks")) {
+                    success = true;
+                    break;
+                }
+            } catch (e) {
+                console.warn(`Proxy ${i+1} failed`);
+            }
+        }
+
+        if (!success) {
+            showStatus("❌ Connection Error: प्लीज अपना इंटरनेट चेक करें या थोड़ी देर बाद ट्राई करें।", "#ef4444");
+            loader.style.display = "none";
+            btn.disabled = false;
+            return;
+        }
 
         try {
-            // Using a reliable CORS Proxy to fetch YouTube page
-            const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://www.youtube.com/watch?v=' + videoId)}`;
-            const response = await fetch(proxyUrl);
-            const data = await response.json();
-            const html = data.contents;
-
-            // Extract Caption Tracks from YouTube HTML
             const captionsMatch = html.match(/"captionTracks":\s*(\[.*?\])/);
-            if (!captionsMatch) throw new Error("इस वीडियो में ट्रांसक्रिप्ट नहीं मिली।");
+            if (!captionsMatch) throw new Error("Transcript not available for this video.");
 
             const captionTracks = JSON.parse(captionsMatch[1]);
-            
-            // Priority: English (Manual) -> English (Auto) -> Hindi -> First
             const track = captionTracks.find(t => t.languageCode === 'en' && t.kind !== 'asr') || 
                           captionTracks.find(t => t.languageCode === 'en') ||
                           captionTracks.find(t => t.languageCode === 'hi') ||
                           captionTracks[0];
 
-            showStatus(`Processing: ${track.name.simpleText}...`, "#4f46e5");
+            showStatus("Cleaning text...", "#4f46e5");
 
-            // Fetch the XML transcript via Proxy
-            const trackProxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(track.baseUrl)}`;
-            const trackResp = await fetch(trackProxyUrl);
-            const trackData = await trackResp.json();
-            const xmlText = trackData.contents;
+            // Direct fetch for the XML (many proxies allow direct XML access)
+            const xmlUrl = `https://corsproxy.io/?${encodeURIComponent(track.baseUrl)}`;
+            const trackResp = await fetch(xmlUrl);
+            const xmlText = await trackResp.text();
 
-            // Parse XML to clean text
             const cleanText = parseXmlTranscript(xmlText);
+            if(!cleanText) throw new Error("Could not parse transcript data.");
 
             resultBox.innerText = cleanText;
             resultBox.style.display = "block";
             resHeader.style.display = "flex";
-            showStatus("✅ सफलतापूर्वक जनरेट!", "#10b981");
+            showStatus("✅ Success!", "#10b981");
 
         } catch (error) {
-            console.error(error);
             showStatus("Error: " + error.message, "#ef4444");
         } finally {
             loader.style.display = "none";
