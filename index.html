@@ -240,8 +240,8 @@
 
 <script>
 async function fetchTranscript() {
+
     const urlInput = document.getElementById('ytUrl').value.trim();
-    const statusMsg = document.getElementById('status-msg');
     const resultBox = document.getElementById('resultBox');
     const resHeader = document.getElementById('resHeader');
     const loader = document.getElementById('loader');
@@ -257,64 +257,33 @@ async function fetchTranscript() {
 
     loader.style.display = "block";
     btn.disabled = true;
-    resultBox.style.display = "none";
-    resHeader.style.display = "none";
 
-    // CORS Proxy
-    const proxy = "https://api.allorigins.win/raw?url=";
+    try {
 
-    // Instances list
-    const instances = [
-        "https://yewtu.be",
-        "https://vid.puffyan.us",
-        "https://inv.nadeko.net",
-        "https://invidious.tiekoetter.com",
-        "https://invidious.privacydev.net"
-    ];
+        // Direct YouTube Caption XML
+        const url =
+        `https://corsproxy.io/?https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`;
 
-    let success = false;
+        const resp = await fetch(url);
+        const xml = await resp.text();
 
-    for (let base of instances) {
-        try {
-            showStatus("Connecting server...", "#6b7280");
-
-            const apiUrl = `${base}/api/v1/captions/${videoId}`;
-            const resp = await fetch(proxy + encodeURIComponent(apiUrl));
-
-            if (!resp.ok) continue;
-
-            const data = await resp.json();
-            if (!data.captions || data.captions.length === 0) continue;
-
-            const track = data.captions.find(c =>
-                c.label.toLowerCase().includes("english")
-            ) || data.captions[0];
-
-            showStatus(`Fetching: ${track.label}`, "#4f46e5");
-
-            const textResp = await fetch(
-                proxy + encodeURIComponent(base + track.url)
-            );
-
-            const raw = await textResp.text();
-
-            resultBox.innerText = cleanSubs(raw);
-            resultBox.style.display = "block";
-            resHeader.style.display = "flex";
-            showStatus("✅ Transcript fetched!", "#10b981");
-
-            success = true;
-            break;
-
-        } catch (err) {
-            console.log("Instance failed");
+        if (!xml || xml.includes("Transcript not available")) {
+            throw new Error();
         }
-    }
 
-    if (!success) {
+        const text = parseXml(xml);
+
+        resultBox.innerText = text;
+        resultBox.style.display = "block";
+        resHeader.style.display = "flex";
+
+        showStatus("✅ Transcript fetched!", "#10b981");
+
+    } catch {
+
         showStatus(
-            "❌ Transcript unavailable / Server blocked",
-            "#ef4444"
+        "❌ Captions disabled / Video unsupported",
+        "#ef4444"
         );
     }
 
@@ -322,33 +291,20 @@ async function fetchTranscript() {
     btn.disabled = false;
 }
 
-// Clean captions
-function cleanSubs(text) {
-    return text
-        .replace(/WEBVTT/g, "")
-        .replace(/\d{2}:\d{2}:\d{2}.\d{3} --> \d{2}:\d{2}:\d{2}.\d{3}/g, "")
-        .replace(/<[^>]*>/g, "")
-        .replace(/\n+/g, " ")
-        .trim();
-}
 
-// Extract video ID
-function extractVideoId(url) {
-    const reg =
-        /(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(reg);
-    return match ? match[1] : null;
-}
+// XML → Text
+function parseXml(xml) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(xml, "text/xml");
+    const texts = xmlDoc.getElementsByTagName("text");
 
-function showStatus(msg, color) {
-    const el = document.getElementById("status-msg");
-    el.textContent = msg;
-    el.style.color = color;
-}
+    let result = "";
 
-function copyText() {
-    const text = document.getElementById("resultBox").innerText;
-    navigator.clipboard.writeText(text);
+    for (let i = 0; i < texts.length; i++) {
+        result += texts[i].textContent + " ";
+    }
+
+    return result.replace(/\s+/g, " ").trim();
 }
 </script>
 
