@@ -31,12 +31,31 @@
 
         <!-- Main Input Card -->
         <main class="glass rounded-3xl p-6 md:p-10 shadow-2xl">
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-2 text-gray-300">YouTube Video URL</label>
-                <div class="relative">
-                    <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." 
-                        class="w-full bg-slate-900 border border-slate-700 rounded-xl py-4 px-12 focus:ring-2 focus:ring-sky-500 outline-none transition">
-                    <i class="fab fa-youtube absolute left-4 top-5 text-red-500 text-xl"></i>
+            <div class="mb-6 space-y-4">
+                <!-- YouTube Link Input -->
+                <div id="urlInputGroup">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">YouTube Video URL</label>
+                    <div class="relative">
+                        <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." 
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl py-4 px-12 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                        <i class="fab fa-youtube absolute left-4 top-5 text-red-500 text-xl"></i>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="relative flex py-2 items-center">
+                    <div class="flex-grow border-t border-slate-800"></div>
+                    <span class="flex-shrink mx-4 text-slate-500 text-[10px] font-bold uppercase tracking-widest">OR</span>
+                    <div class="flex-grow border-t border-slate-800"></div>
+                </div>
+
+                <!-- File Upload Input -->
+                <div id="fileInputGroup">
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Upload Audio File (MP3, WAV, etc.)</label>
+                    <div class="relative">
+                        <input type="file" id="audioFile" accept="audio/*" 
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl py-3 px-4 text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-sky-500 file:text-white hover:file:bg-sky-600 transition cursor-pointer">
+                    </div>
                 </div>
             </div>
 
@@ -100,7 +119,7 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.14
+            Designed with ❤️ by AJ | Version 1.16
             https://youtu.be/P-c52MrWeGM?si=_Vx4cqVqp0mMKnB5
         </footer>
     </div>
@@ -141,31 +160,72 @@
 
     async function processTranscript() {
         const rawUrl = document.getElementById('videoUrl').value.trim();
+        const fileInput = document.getElementById('audioFile');
         const model = document.getElementById('apiModel').value;
         const key_aai = localStorage.getItem('key_assemblyai');
 
-        if (!rawUrl) { alert('Bhai, please enter a YouTube link!'); return; }
+        // Validation: Check if either URL or File is provided
+        if (!rawUrl && (!fileInput.files || fileInput.files.length === 0)) {
+            alert('Bhai, please enter a YouTube link or upload an audio file!');
+            return;
+        }
+
+        if (model !== 'assemblyai') {
+            alert("Currently only AssemblyAI is supported for direct uploads. Please switch model.");
+            return;
+        }
         
+        if (!key_aai) { 
+            alert("Add AssemblyAI Key in Settings!"); 
+            toggleSettings(); 
+            return; 
+        }
+
         statusArea.classList.remove('hidden');
         resultArea.classList.add('hidden');
-        statusText.innerText = "AJ is waking up the AI servers...";
+        statusText.innerText = "AJ is checking your data...";
 
         try {
-            const videoId = extractVideoID(rawUrl);
-            if (!videoId) throw new Error("Invalid YouTube URL! Please check the link.");
-            
-            const cleanUrl = `https://www.youtube.com/watch?v=${videoId}`;
-
-            if (model === 'assemblyai') {
-                if (!key_aai) throw new Error("Add AssemblyAI Key in Settings!");
-                await startProTranscription(key_aai, cleanUrl);
+            if (fileInput.files && fileInput.files.length > 0) {
+                // Scenario 1: User uploaded a file (CORS Safe!)
+                const audioBlob = fileInput.files[0];
+                await uploadAndTranscribe(key_aai, audioBlob);
             } else {
-                alert("Groq is undergoing maintenance, please use AssemblyAI.");
-                statusArea.classList.add('hidden');
+                // Scenario 2: User provided a link (Uses Proxy)
+                const videoId = extractVideoID(rawUrl);
+                if (!videoId) throw new Error("Invalid YouTube Link!");
+                await startAJMasterTranscription(key_aai, videoId);
             }
         } catch (error) {
-            alert("Error: " + error.message);
+            alert(error.message);
             statusArea.classList.add('hidden');
+        }
+    }
+
+    async function uploadAndTranscribe(key, audioData) {
+        try {
+            statusText.innerText = "Step 1: Uploading your file directly...";
+            const upRes = await fetch('https://api.assemblyai.com/v2/upload', {
+                method: 'POST',
+                headers: { 'authorization': key },
+                body: audioData
+            });
+            const upData = await upRes.json();
+            if (!upData.upload_url) throw new Error("Upload failed. Check your API key.");
+
+            statusText.innerText = "Step 2: AI is Transcribing (Safe Mode)...";
+            const transRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+                method: 'POST',
+                headers: { 'authorization': key, 'content-type': 'application/json' },
+                body: JSON.stringify({ 
+                    audio_url: upData.upload_url, 
+                    speech_models: ["best"] 
+                })
+            });
+            const transData = await transRes.json();
+            pollAJResult(transData.id, key);
+        } catch (err) {
+            throw err;
         }
     }
 
