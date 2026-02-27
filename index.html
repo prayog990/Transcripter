@@ -100,7 +100,7 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.8
+            Designed with ❤️ by AJ | Version 1.9
             https://youtu.be/P-c52MrWeGM?si=_Vx4cqVqp0mMKnB5
         </footer>
     </div>
@@ -174,27 +174,40 @@
     }
 
     // --- ASSEMBLY AI LOGIC ---
-    // --- ASSEMBLY AI LOGIC (v1.8 CORS FIXED) ---
+    // --- ASSEMBLY AI LOGIC (v1.9 PIPED API INTEGRATION) ---
     async function handleAssemblyAI(key, videoUrl) {
         try {
             const videoId = extractVideoID(videoUrl);
-            statusText.innerText = "Step 1: Analyzing YouTube Link...";
+            statusText.innerText = "Step 1: Fetching Direct Audio Stream...";
             
-            // Audio Bridge URL
-            const audioBridge = `https://api.vevioz.com/@api/button/mp3/${videoId}`;
+            // Using Piped API to get direct audio links
+            const pipedApi = `https://pipedapi.kavin.rocks/streams/${videoId}`;
+            const pipedResp = await fetch(pipedApi);
+            if (!pipedResp.ok) throw new Error("Could not fetch video data. YouTube might be blocking this request.");
             
-            // Step 2: Download using a CORS Proxy to bypass browser restrictions
-            statusText.innerText = "Step 2: Downloading Audio (via Proxy)...";
+            const pipedData = await pipedResp.json();
+            // Finding the best audio stream
+            const audioStream = pipedData.audioStreams.find(s => s.bitrate > 0) || pipedData.audioStreams[0];
             
-            const proxyUrl = "https://api.allorigins.win/raw?url=";
-            const audioResp = await fetch(proxyUrl + encodeURIComponent(audioBridge));
+            if (!audioStream || !audioStream.url) throw new Error("No audio stream found for this video.");
             
-            if (!audioResp.ok) throw new Error("Proxy failed to fetch audio. Please try again or use another video.");
-            
-            const audioBlob = await audioResp.blob();
-            if (audioBlob.size < 1000) throw new Error("Audio file too small or invalid. Try a different video.");
+            const directAudioUrl = audioStream.url;
 
-            statusText.innerText = "Step 3: Uploading File to AI Server...";
+            statusText.innerText = "Step 2: Downloading Audio for Upload...";
+            // We download it to browser first to avoid AssemblyAI download errors
+            const audioFileResp = await fetch(directAudioUrl);
+            const audioBlob = await audioFileResp.blob();
+
+            statusText.innerText = "Step 3: Uploading to AssemblyAI...";
+            const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
+                method: 'POST',
+                headers: { 'authorization': key },
+                body: audioBlob
+            });
+            const uploadData = await uploadRes.json();
+            if (!uploadData.upload_url) throw new Error("Upload failed!");
+
+            statusText.innerText = "Step 4: Initializing AI Transcription...";
             const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
                 method: 'POST',
                 headers: { 'authorization': key },
