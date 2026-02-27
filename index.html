@@ -100,7 +100,7 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.11
+            Designed with ❤️ by AJ | Version 1.12
             https://youtu.be/P-c52MrWeGM?si=_Vx4cqVqp0mMKnB5
         </footer>
     </div>
@@ -175,30 +175,70 @@
     }
 
     async function handleAssemblyAI(key, videoId) {
-        try {
-            // AJ Pro-Tip: Using multiple proxies to ensure success
-            const proxy = "https://api.allorigins.win/raw?url=";
-            
-            statusText.innerText = "Step 1: Bypassing YouTube Restrictions...";
-            const pipedUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
-            
-            // Fetching via Proxy to avoid CORS 'Failed to fetch'
-            const pipedResp = await fetch(proxy + encodeURIComponent(pipedUrl));
-            if (!pipedResp.ok) throw new Error("Connection failed. Try again in 5 seconds.");
-            
-            const pipedData = await pipedResp.json();
-            const audioStream = pipedData.audioStreams.find(s => s.bitrate > 0) || pipedData.audioStreams[0];
-            if (!audioStream) throw new Error("Audio stream blocked. Try another video.");
+        // AJ Fix: Using a more robust CORS proxy and multiple API instances
+        const proxy = "https://corsproxy.io/?";
+        const instances = [
+            "https://pipedapi.kavin.rocks",
+            "https://pipedapi.drgns.space",
+            "https://pipedapi.astral.ninja"
+        ];
 
-            statusText.innerText = "Step 2: Capturing Audio Data...";
-            // Downloading the actual audio file through proxy as well
+        let pipedData = null;
+        let success = false;
+
+        statusText.innerText = "Step 1: Looking for open audio path...";
+
+        for (let baseUrl of instances) {
+            try {
+                const pipedUrl = `${baseUrl}/streams/${videoId}`;
+                const response = await fetch(proxy + encodeURIComponent(pipedUrl));
+                if (response.ok) {
+                    pipedData = await response.json();
+                    success = true;
+                    break; 
+                }
+            } catch (e) { console.log("AJ Debug: Server failed, trying next..."); }
+        }
+
+        if (!success || !pipedData) {
+            throw new Error("YouTube is currently blocking all paths. Try a different video link or wait 2 minutes.");
+        }
+
+        try {
+            const audioStream = pipedData.audioStreams.find(s => s.bitrate > 0) || pipedData.audioStreams[0];
+            if (!audioStream) throw new Error("No readable audio stream found.");
+
+            statusText.innerText = "Step 2: Securely capturing audio...";
+            // Downloading with the new proxy
             const audioResp = await fetch(proxy + encodeURIComponent(audioStream.url));
-            if (!audioResp.ok) throw new Error("Audio download failed at Step 2.");
+            if (!audioResp.ok) throw new Error("Failed to capture audio stream.");
             const audioBlob = await audioResp.blob();
 
-            if (audioBlob.size < 100) throw new Error("Received empty audio file. Try again.");
+            statusText.innerText = "Step 3: Sending to AssemblyAI (Universal-3-Pro)...";
+            const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
+                method: 'POST',
+                headers: { 'authorization': key },
+                body: audioBlob
+            });
+            const uploadData = await uploadRes.json();
+            if (!uploadData.upload_url) throw new Error("Upload to AI failed!");
 
-            statusText.innerText = "Step 3: Handing over to AssemblyAI...";
+            statusText.innerText = "Step 4: AI is processing (95% Accuracy Mode)...";
+            const transcriptRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+                method: 'POST',
+                headers: { 'authorization': key, 'content-type': 'application/json' },
+                body: JSON.stringify({ 
+                    audio_url: uploadData.upload_url,
+                    speech_models: ["universal-3-pro"] 
+                })
+            });
+            const transcriptData = await transcriptRes.json();
+            checkStatusAAI(transcriptData.id, key);
+
+        } catch (err) {
+            throw err;
+        }
+    }
 
             statusText.innerText = "Step 3: Uploading to AssemblyAI...";
             const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
