@@ -100,7 +100,8 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.7
+            Designed with ❤️ by AJ | Version 1.8
+            https://youtu.be/P-c52MrWeGM?si=_Vx4cqVqp0mMKnB5
         </footer>
     </div>
 
@@ -173,19 +174,25 @@
     }
 
     // --- ASSEMBLY AI LOGIC ---
-    // --- ASSEMBLY AI LOGIC (v1.7 PRO UPLOAD) ---
+    // --- ASSEMBLY AI LOGIC (v1.8 CORS FIXED) ---
     async function handleAssemblyAI(key, videoUrl) {
         try {
             const videoId = extractVideoID(videoUrl);
-            statusText.innerText = "Step 1: Preparing Audio Stream...";
+            statusText.innerText = "Step 1: Analyzing YouTube Link...";
             
-            // Using a more reliable audio bridge
+            // Audio Bridge URL
             const audioBridge = `https://api.vevioz.com/@api/button/mp3/${videoId}`;
             
-            statusText.innerText = "Step 2: Downloading Audio to Browser...";
-            const audioResp = await fetch(audioBridge);
-            if (!audioResp.ok) throw new Error("Could not fetch audio from bridge. Try again in a moment.");
+            // Step 2: Download using a CORS Proxy to bypass browser restrictions
+            statusText.innerText = "Step 2: Downloading Audio (via Proxy)...";
+            
+            const proxyUrl = "https://api.allorigins.win/raw?url=";
+            const audioResp = await fetch(proxyUrl + encodeURIComponent(audioBridge));
+            
+            if (!audioResp.ok) throw new Error("Proxy failed to fetch audio. Please try again or use another video.");
+            
             const audioBlob = await audioResp.blob();
+            if (audioBlob.size < 1000) throw new Error("Audio file too small or invalid. Try a different video.");
 
             statusText.innerText = "Step 3: Uploading File to AI Server...";
             const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
