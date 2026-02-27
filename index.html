@@ -100,7 +100,7 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.4
+            Designed with ❤️ by AJ | Version 1.5
         </footer>
     </div>
 
@@ -181,7 +181,7 @@
                 headers: { 'authorization': key, 'content-type': 'application/json' },
                 body: JSON.stringify({ 
                     audio_url: videoUrl, 
-                    speech_model: "nano"
+                    speech_models: ["universal-3-pro"] 
                 })
             });
             const data = await response.json();
