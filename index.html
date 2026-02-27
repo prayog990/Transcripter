@@ -100,12 +100,12 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.9
+            Designed with ❤️ by AJ | Version 1.10
             https://youtu.be/P-c52MrWeGM?si=_Vx4cqVqp0mMKnB5
         </footer>
     </div>
 
-    <script>
+<script>
     const statusText = document.getElementById('statusText');
     const statusArea = document.getElementById('statusArea');
     const resultArea = document.getElementById('resultArea');
@@ -140,63 +140,54 @@
     }
 
     async function processTranscript() {
-        const url = document.getElementById('videoUrl').value;
-        const model = document.getElementById('apiModel').value;
+        console.log("AJ Debug: Process Started");
+        const urlInput = document.getElementById('videoUrl');
+        const modelSelect = document.getElementById('apiModel');
+        const url = urlInput.value.trim();
+        const model = modelSelect.value;
+        
         const key_aai = localStorage.getItem('key_assemblyai');
         const key_groq = localStorage.getItem('key_groq');
 
-        if (!url) { alert('Please enter a YouTube URL'); return; }
+        if (!url) { alert('Bhai, please enter a YouTube URL!'); return; }
         
-        // Key Validation
-        if (model === 'assemblyai' && !key_aai) { alert('Add AssemblyAI Key in Settings!'); toggleSettings(); return; }
-        if (model === 'groq' && !key_groq) { alert('Add Groq API Key in Settings!'); toggleSettings(); return; }
-
+        // Show loading immediately
         statusArea.classList.remove('hidden');
         resultArea.classList.add('hidden');
-        statusText.innerText = "Connecting to " + model.toUpperCase() + "...";
+        statusText.innerText = "AJ is connecting to AI servers...";
 
         try {
             const videoId = extractVideoID(url);
-            if (!videoId) throw new Error("Invalid YouTube URL");
+            if (!videoId) throw new Error("Invalid YouTube URL. Please check the link.");
 
             if (model === 'assemblyai') {
-                await handleAssemblyAI(key_aai, url);
+                if (!key_aai) throw new Error("Please add AssemblyAI Key in Settings!");
+                await handleAssemblyAI(key_aai, videoId);
             } else if (model === 'groq') {
+                if (!key_groq) throw new Error("Please add Groq API Key in Settings!");
                 await handleGroq(key_groq, videoId);
-            } else {
-                alert("This model integration is coming soon!");
-                statusArea.classList.add('hidden');
             }
         } catch (error) {
-            alert("Error: " + error.message);
+            console.error("AJ Error:", error);
+            alert(error.message);
             statusArea.classList.add('hidden');
         }
     }
 
-    // --- ASSEMBLY AI LOGIC ---
-    // --- ASSEMBLY AI LOGIC (v1.9 PIPED API INTEGRATION) ---
-    async function handleAssemblyAI(key, videoUrl) {
+    async function handleAssemblyAI(key, videoId) {
         try {
-            const videoId = extractVideoID(videoUrl);
-            statusText.innerText = "Step 1: Fetching Direct Audio Stream...";
-            
-            // Using Piped API to get direct audio links
+            statusText.innerText = "Step 1: Getting Audio Link...";
             const pipedApi = `https://pipedapi.kavin.rocks/streams/${videoId}`;
             const pipedResp = await fetch(pipedApi);
-            if (!pipedResp.ok) throw new Error("Could not fetch video data. YouTube might be blocking this request.");
+            if (!pipedResp.ok) throw new Error("Server busy. Please try again in 10 seconds.");
             
             const pipedData = await pipedResp.json();
-            // Finding the best audio stream
             const audioStream = pipedData.audioStreams.find(s => s.bitrate > 0) || pipedData.audioStreams[0];
-            
-            if (!audioStream || !audioStream.url) throw new Error("No audio stream found for this video.");
-            
-            const directAudioUrl = audioStream.url;
+            if (!audioStream) throw new Error("No audio stream found.");
 
-            statusText.innerText = "Step 2: Downloading Audio for Upload...";
-            // We download it to browser first to avoid AssemblyAI download errors
-            const audioFileResp = await fetch(directAudioUrl);
-            const audioBlob = await audioFileResp.blob();
+            statusText.innerText = "Step 2: Downloading Audio...";
+            const audioResp = await fetch(audioStream.url);
+            const audioBlob = await audioResp.blob();
 
             statusText.innerText = "Step 3: Uploading to AssemblyAI...";
             const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
@@ -205,18 +196,8 @@
                 body: audioBlob
             });
             const uploadData = await uploadRes.json();
-            if (!uploadData.upload_url) throw new Error("Upload failed!");
 
-            statusText.innerText = "Step 4: Initializing AI Transcription...";
-            const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
-                method: 'POST',
-                headers: { 'authorization': key },
-                body: audioBlob
-            });
-            const uploadData = await uploadRes.json();
-            if (!uploadData.upload_url) throw new Error("Upload failed: " + (uploadData.error || "Unknown error"));
-
-            statusText.innerText = "Step 4: Initializing Transcription...";
+            statusText.innerText = "Step 4: AI Transcribing (Universal-3-Pro)...";
             const transcriptRes = await fetch('https://api.assemblyai.com/v2/transcript', {
                 method: 'POST',
                 headers: { 'authorization': key, 'content-type': 'application/json' },
@@ -225,83 +206,36 @@
                     speech_models: ["universal-3-pro"] 
                 })
             });
-            
             const transcriptData = await transcriptRes.json();
-            if (transcriptData.error) throw new Error(transcriptData.error);
-            
             checkStatusAAI(transcriptData.id, key);
         } catch (err) {
-            statusText.innerText = "Error: " + err.message;
-            alert("Process Failed: " + err.message);
-            statusArea.classList.add('hidden');
+            throw err;
         }
     }
 
     async function checkStatusAAI(id, key) {
-        statusText.innerText = "Step 5: AI is Transcribing (95% Accuracy Mode)...";
         const checkInterval = setInterval(async () => {
             try {
                 const res = await fetch(`https://api.assemblyai.com/v2/transcript/${id}`, {
                     headers: { 'authorization': key }
                 });
                 const statusData = await res.json();
-                
                 if (statusData.status === 'completed') {
                     clearInterval(checkInterval);
                     showResult(statusData.text);
                 } else if (statusData.status === 'error') {
                     clearInterval(checkInterval);
-                    alert("AssemblyAI Error: " + statusData.error);
+                    alert("AI Error: " + statusData.error);
                     statusArea.classList.add('hidden');
                 }
-            } catch (e) {
-                console.error("Status check failed:", e);
-            }
+            } catch (e) { console.error(e); }
         }, 5000);
     }
 
-    // --- GROQ (WHISPER V3) LOGIC ---
     async function handleGroq(key, videoId) {
-        statusText.innerText = "Groq: Fetching Audio Stream...";
-        try {
-            // Note: Groq often blocks direct browser requests due to CORS.
-            // Using a different audio helper
-            const audioLink = `https://api.deeptube.workers.dev/?v=${videoId}`;
-            
-            statusText.innerText = "Groq: Extracting Audio Data...";
-            const audioResp = await fetch(audioLink);
-            if(!audioResp.ok) throw new Error("Audio extraction failed. Try AssemblyAI instead.");
-            
-            const blob = await audioResp.blob();
-            const file = new File([blob], "audio.mp3", { type: "audio/mp3" });
-
-            // Step 2: Send to Groq
-            statusText.innerText = "Groq: Transcribing with Whisper V3...";
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("model", "whisper-large-v3");
-            formData.append("response_format", "json");
-
-            // Using a CORS Proxy to bypass browser restrictions
-            const proxyUrl = "https://cors-anywhere.herokuapp.com/"; 
-            const groqApiUrl = "https://api.groq.com/openai/v1/audio/transcriptions";
-
-            const groqResp = await fetch(groqApiUrl, {
-                method: "POST",
-                headers: { 
-                    "Authorization": `Bearer ${key}`
-                },
-                body: formData
-            });
-
-            const groqData = await groqResp.json();
-            if (groqData.error) throw new Error(groqData.error.message);
-            showResult(groqData.text);
-
-        } catch (err) {
-            statusText.innerText = "Groq Error: " + err.message;
-            console.error(err);
-        }
+        // Groq logic is currently limited by browser CORS
+        alert("Bhai, Groq is still being fixed. Please use AssemblyAI for now!");
+        statusArea.classList.add('hidden');
     }
 
     function showResult(text) {
