@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcript Magic v1.0 - By AJ</title>
+    <title>Transcript Magic v1.4 - By AJ</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -181,7 +181,7 @@
                 headers: { 'authorization': key, 'content-type': 'application/json' },
                 body: JSON.stringify({ 
                     audio_url: videoUrl, 
-                    speech_model: "best" 
+                    speech_model: "nano"
                 })
             });
             const data = await response.json();
@@ -232,9 +232,15 @@
             formData.append("model", "whisper-large-v3");
             formData.append("response_format", "json");
 
-            const groqResp = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+            // Using a CORS Proxy to bypass browser restrictions
+            const proxyUrl = "https://cors-anywhere.herokuapp.com/"; 
+            const groqApiUrl = "https://api.groq.com/openai/v1/audio/transcriptions";
+
+            const groqResp = await fetch(groqApiUrl, {
                 method: "POST",
-                headers: { "Authorization": `Bearer ${key}` },
+                headers: { 
+                    "Authorization": `Bearer ${key}`
+                },
                 body: formData
             });
 
