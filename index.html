@@ -3,154 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Transcript Pro</title>
+    <title>Transcript Magic v1.0 - By AJ</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            min-height: 100vh;
-            color: white;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 20px;
-        }
-
-        .loader {
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #3b82f6;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-            display: none;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 10px;
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap');
+        body { font-family: 'Poppins', sans-serif; background: #0f172a; color: white; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+        .gradient-text { background: linear-gradient(90deg, #38bdf8, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .loader { border-top-color: #38bdf8; animation: spinner 1.5s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
-<body class="flex flex-col items-center p-4 md:p-10">
+<body class="min-h-screen p-4 md:p-8">
 
-    <div class="text-center mb-10">
-        <h1 class="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-emerald-400">
-            YouTube Transcript Pro
-        </h1>
-        <p class="text-gray-400 mt-2">किसी भी वीडियो का ट्रांसक्रिप्ट तुरंत प्राप्त करें</p>
-    </div>
-
-    <div class="glass-card p-6 w-full max-w-2xl shadow-2xl">
-        <div class="flex flex-col md:flex-row gap-4">
-            <input type="text" id="videoUrl" 
-                placeholder="YouTube URL यहाँ पेस्ट करें..." 
-                class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-sm">
-            
-            <button onclick="fetchTranscript()" id="fetchBtn"
-                class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl transition-all flex items-center justify-center gap-2">
-                <span id="btnText">ट्रांसक्रिप्ट निकालें</span>
-                <div id="btnLoader" class="loader"></div>
-            </button>
-        </div>
-        <p id="errorMsg" class="text-red-400 text-sm mt-3 hidden text-center"></p>
-    </div>
-
-    <div id="resultSection" class="w-full max-w-3xl mt-8 hidden">
-        <div class="glass-card p-6 relative">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-xl font-semibold text-blue-300">वीडियो ट्रांसक्रिप्ट</h2>
-                <button onclick="copyToClipboard()" class="text-gray-400 hover:text-white flex items-center gap-2 text-sm bg-slate-800 px-3 py-1 rounded-lg">
-                    <i class="far fa-copy"></i> कॉपी करें
-                </button>
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-10">
+            <div>
+                <h1 class="text-3xl font-bold gradient-text">Transcript Magic</h1>
+                <p class="text-gray-400 text-sm">AI-Powered YouTube Transcription</p>
             </div>
-            
-            <div id="transcriptContent" class="text-gray-300 leading-relaxed max-h-[500px] overflow-y-auto pr-4 text-justify">
+            <button onclick="toggleSettings()" class="glass p-3 rounded-full hover:bg-slate-700 transition">
+                <i class="fas fa-cog text-xl"></i>
+            </button>
+        </header>
+
+        <!-- Main Input Card -->
+        <main class="glass rounded-3xl p-6 md:p-10 shadow-2xl">
+            <div class="mb-6">
+                <label class="block text-sm font-medium mb-2 text-gray-300">YouTube Video URL</label>
+                <div class="relative">
+                    <input type="text" id="videoUrl" placeholder="https://www.youtube.com/watch?v=..." 
+                        class="w-full bg-slate-900 border border-slate-700 rounded-xl py-4 px-12 focus:ring-2 focus:ring-sky-500 outline-none transition">
+                    <i class="fab fa-youtube absolute left-4 top-5 text-red-500 text-xl"></i>
                 </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div>
+                    <label class="block text-sm font-medium mb-2 text-gray-300">Select AI Model</label>
+                    <select id="apiModel" class="w-full bg-slate-900 border border-slate-700 rounded-xl py-4 px-4 outline-none focus:ring-2 focus:ring-sky-500">
+                        <option value="assemblyai">AssemblyAI (Best for Links)</option>
+                        <option value="groq">Groq - Whisper V3 (Super Fast)</option>
+                        <option value="deepgram">Deepgram (Low Latency)</option>
+                        <option value="openai">OpenAI Whisper (Classic)</option>
+                    </select>
+                </div>
+                <div class="flex items-end">
+                    <button id="startBtn" onclick="processTranscript()" class="w-full bg-sky-500 hover:bg-sky-600 text-white font-bold py-4 rounded-xl shadow-lg shadow-sky-500/20 transition-all active:scale-95">
+                        Get Transcript <i class="fas fa-magic ml-2"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Display -->
+            <div id="statusArea" class="hidden text-center p-6 border-t border-slate-700 mt-6">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-12 w-12 mb-4 mx-auto"></div>
+                <p id="statusText" class="text-sky-400 font-medium">Processing Audio...</p>
+            </div>
+
+            <!-- Result Display -->
+            <div id="resultArea" class="hidden mt-6 space-y-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xl">Transcript Result</h3>
+                    <button onclick="copyText()" class="text-sm bg-slate-700 px-4 py-2 rounded-lg hover:bg-slate-600 transition">
+                        <i class="fas fa-copy mr-2"></i>Copy
+                    </button>
+                </div>
+                <div id="transcriptOutput" class="bg-slate-900 rounded-xl p-6 text-gray-300 leading-relaxed max-h-[400px] overflow-y-auto border border-slate-800">
+                    आपका ट्रांसक्रिप्शन यहाँ दिखाई देगा...
+                </div>
+            </div>
+        </main>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="fixed inset-0 bg-black/80 flex items-center justify-center hidden z-50 p-4">
+            <div class="glass max-w-md w-full rounded-3xl p-8">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold">API Settings</h2>
+                    <button onclick="toggleSettings()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs text-gray-400 uppercase tracking-wider">AssemblyAI Key</label>
+                        <input type="password" id="key_assemblyai" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 mt-1 outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400 uppercase tracking-wider">Groq API Key</label>
+                        <input type="password" id="key_groq" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 mt-1 outline-none">
+                    </div>
+                    <button onclick="saveKeys()" class="w-full bg-sky-500 py-3 rounded-xl font-bold mt-4">Save API Keys</button>
+                    <p class="text-[10px] text-gray-500 text-center uppercase tracking-tighter">Your keys are stored locally in your browser.</p>
+                </div>
+            </div>
         </div>
+
+        <footer class="text-center mt-10 text-gray-500 text-sm">
+            Designed with ❤️ by AJ | Version 1.0
+        </footer>
     </div>
 
     <script>
-        async function fetchTranscript() {
-            const urlInput = document.getElementById('videoUrl').value;
-            const btnText = document.getElementById('btnText');
-            const btnLoader = document.getElementById('btnLoader');
-            const errorMsg = document.getElementById('errorMsg');
-            const resultSection = document.getElementById('resultSection');
-            const content = document.getElementById('transcriptContent');
+    const statusText = document.getElementById('statusText');
+    const statusArea = document.getElementById('statusArea');
+    const resultArea = document.getElementById('resultArea');
+    const transcriptOutput = document.getElementById('transcriptOutput');
 
-            // Reset UI
-            errorMsg.classList.add('hidden');
-            if (!urlInput.includes('youtube.com') && !urlInput.includes('youtu.be')) {
-                showError("कृपया एक मान्य YouTube लिंक डालें।");
-                return;
+    function toggleSettings() {
+        document.getElementById('settingsModal').classList.toggle('hidden');
+    }
+
+    function saveKeys() {
+        localStorage.setItem('key_assemblyai', document.getElementById('key_assemblyai').value);
+        localStorage.setItem('key_groq', document.getElementById('key_groq').value);
+        alert('API Keys Saved Safely!');
+        toggleSettings();
+    }
+
+    window.onload = () => {
+        document.getElementById('key_assemblyai').value = localStorage.getItem('key_assemblyai') || '';
+        document.getElementById('key_groq').value = localStorage.getItem('key_groq') || '';
+    };
+
+    function copyText() {
+        const text = transcriptOutput.innerText;
+        navigator.clipboard.writeText(text);
+        alert('Copied to clipboard!');
+    }
+
+    function extractVideoID(url) {
+        const regExp = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        return (match && match[2].length == 11) ? match[2] : null;
+    }
+
+    async function processTranscript() {
+        const url = document.getElementById('videoUrl').value;
+        const model = document.getElementById('apiModel').value;
+        const key_aai = localStorage.getItem('key_assemblyai');
+        const key_groq = localStorage.getItem('key_groq');
+
+        if (!url) { alert('Please enter a YouTube URL'); return; }
+        
+        // Key Validation
+        if (model === 'assemblyai' && !key_aai) { alert('Add AssemblyAI Key in Settings!'); toggleSettings(); return; }
+        if (model === 'groq' && !key_groq) { alert('Add Groq API Key in Settings!'); toggleSettings(); return; }
+
+        statusArea.classList.remove('hidden');
+        resultArea.classList.add('hidden');
+        statusText.innerText = "Connecting to " + model.toUpperCase() + "...";
+
+        try {
+            const videoId = extractVideoID(url);
+            if (!videoId) throw new Error("Invalid YouTube URL");
+
+            if (model === 'assemblyai') {
+                await handleAssemblyAI(key_aai, url);
+            } else if (model === 'groq') {
+                await handleGroq(key_groq, videoId);
+            } else {
+                alert("This model integration is coming soon!");
+                statusArea.classList.add('hidden');
             }
-
-            // Start Loading
-            btnText.style.opacity = '0.5';
-            btnLoader.style.display = 'block';
-
-            try {
-                // Extract Video ID
-                const videoId = extractVideoId(urlInput);
-                
-                /* Note: YouTube does not allow direct scraping from browser. 
-                   Using a helper microservice/proxy for demonstration.
-                */
-                const response = await fetch(`https://subtitles-api.vercel.app/api/transcript?v=${videoId}`);
-                const data = await response.json();
-
-                if (data.status === 'success') {
-                    content.innerHTML = data.transcript.map(line => 
-                        `<p class="mb-3"><span class="text-emerald-400 font-mono text-xs mr-2">[${line.start}]</span> ${line.text}</p>`
-                    ).join('');
-                    resultSection.classList.remove('hidden');
-                    resultSection.scrollIntoView({ behavior: 'smooth' });
-                } else {
-                    throw new Error("इस वीडियो के लिए ट्रांसक्रिप्ट उपलब्ध नहीं है।");
-                }
-
-            } catch (err) {
-                showError("त्रुटि: ट्रांसक्रिप्ट नहीं मिला। सुनिश्चित करें कि वीडियो में सबटाइटल्स चालू हैं।");
-            } finally {
-                btnText.style.opacity = '1';
-                btnLoader.style.display = 'none';
-            }
+        } catch (error) {
+            alert("Error: " + error.message);
+            statusArea.classList.add('hidden');
         }
+    }
 
-        function extractVideoId(url) {
-            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-            const match = url.match(regExp);
-            return (match && match[2].length === 11) ? match[2] : null;
-        }
-
-        function showError(msg) {
-            const errorMsg = document.getElementById('errorMsg');
-            errorMsg.innerText = msg;
-            errorMsg.classList.remove('hidden');
-        }
-
-        function copyToClipboard() {
-            const text = document.getElementById('transcriptContent').innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                alert("ट्रांसक्रिप्ट कॉपी कर लिया गया है!");
+    // --- ASSEMBLY AI LOGIC ---
+    async function handleAssemblyAI(key, videoUrl) {
+        statusText.innerText = "AssemblyAI: Processing Link...";
+        try {
+            const response = await fetch('https://api.assemblyai.com/v2/transcript', {
+                method: 'POST',
+                headers: { 'authorization': key, 'content-type': 'application/json' },
+                body: JSON.stringify({ audio_url: videoUrl, language_detection: true })
             });
+            const data = await response.json();
+            if (data.error) throw new Error(data.error);
+            checkStatusAAI(data.id, key);
+        } catch (err) {
+            statusText.innerText = "AAI Error: " + err.message;
         }
-    </script>
+    }
+
+    async function checkStatusAAI(id, key) {
+        statusText.innerText = "AssemblyAI: Transcribing video...";
+        const checkInterval = setInterval(async () => {
+            const res = await fetch(`https://api.assemblyai.com/v2/transcript/${id}`, {
+                headers: { 'authorization': key }
+            });
+            const statusData = await res.json();
+            if (statusData.status === 'completed') {
+                clearInterval(checkInterval);
+                showResult(statusData.text);
+            } else if (statusData.status === 'error') {
+                clearInterval(checkInterval);
+                alert("AssemblyAI Failed!");
+                statusArea.classList.add('hidden');
+            }
+        }, 3000);
+    }
+
+    // --- GROQ (WHISPER V3) LOGIC ---
+    async function handleGroq(key, videoId) {
+        statusText.innerText = "Groq: Fetching Audio Stream...";
+        try {
+            // Step 1: Get Audio Link via Helper (Using a proxy-friendly service)
+            const audioLink = `https://api.vevioz.com/@api/button/mp3/${videoId}`;
+            
+            statusText.innerText = "Groq: Converting Audio for Whisper...";
+            const audioResp = await fetch(audioLink);
+            const blob = await audioResp.blob();
+            const file = new File([blob], "audio.mp3", { type: "audio/mp3" });
+
+            // Step 2: Send to Groq
+            statusText.innerText = "Groq: Transcribing with Whisper V3...";
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("model", "whisper-large-v3");
+            formData.append("response_format", "json");
+
+            const groqResp = await fetch("https://api.groq.com/openai/v1/audio/transcriptions", {
+                method: "POST",
+                headers: { "Authorization": `Bearer ${key}` },
+                body: formData
+            });
+
+            const groqData = await groqResp.json();
+            if (groqData.error) throw new Error(groqData.error.message);
+            showResult(groqData.text);
+
+        } catch (err) {
+            statusText.innerText = "Groq Error: " + err.message;
+            console.error(err);
+        }
+    }
+
+    function showResult(text) {
+        statusArea.classList.add('hidden');
+        resultArea.classList.remove('hidden');
+        transcriptOutput.innerText = text;
+    }
+</script>
 </body>
 </html>
