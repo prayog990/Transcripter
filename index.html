@@ -100,7 +100,7 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.12
+            Designed with ❤️ by AJ | Version 1.13
             https://youtu.be/P-c52MrWeGM?si=_Vx4cqVqp0mMKnB5
         </footer>
     </div>
@@ -140,42 +140,35 @@
     }
 
     async function processTranscript() {
-        console.log("AJ Debug: Process Started");
-        const urlInput = document.getElementById('videoUrl');
-        const modelSelect = document.getElementById('apiModel');
-        const url = urlInput.value.trim();
-        const model = modelSelect.value;
-        
+        const url = document.getElementById('videoUrl').value.trim();
+        const model = document.getElementById('apiModel').value;
         const key_aai = localStorage.getItem('key_assemblyai');
         const key_groq = localStorage.getItem('key_groq');
 
-        if (!url) { alert('Bhai, please enter a YouTube URL!'); return; }
-        
-        // Show loading immediately
+        if (!url) { alert('Please enter a YouTube link!'); return; }
+
         statusArea.classList.remove('hidden');
         resultArea.classList.add('hidden');
-        statusText.innerText = "AJ is connecting to AI servers...";
+        statusText.innerText = "AJ is starting the engine...";
 
         try {
             const videoId = extractVideoID(url);
-            if (!videoId) throw new Error("Invalid YouTube URL. Please check the link.");
+            if (!videoId) throw new Error("Invalid YouTube URL!");
 
             if (model === 'assemblyai') {
-                if (!key_aai) throw new Error("Please add AssemblyAI Key in Settings!");
-                await handleAssemblyAI(key_aai, videoId);
-            } else if (model === 'groq') {
-                if (!key_groq) throw new Error("Please add Groq API Key in Settings!");
-                await handleGroq(key_groq, videoId);
+                if (!key_aai) throw new Error("Add AssemblyAI Key in Settings!");
+                await startAssemblyAI(key_aai, videoId);
+            } else {
+                alert("Please use AssemblyAI for now!");
+                statusArea.classList.add('hidden');
             }
         } catch (error) {
-            console.error("AJ Error:", error);
             alert(error.message);
             statusArea.classList.add('hidden');
         }
     }
 
-    async function handleAssemblyAI(key, videoId) {
-        // AJ Fix: Using a more robust CORS proxy and multiple API instances
+    async function startAssemblyAI(key, videoId) {
         const proxy = "https://corsproxy.io/?";
         const instances = [
             "https://pipedapi.kavin.rocks",
@@ -183,116 +176,64 @@
             "https://pipedapi.astral.ninja"
         ];
 
-        let pipedData = null;
-        let success = false;
+        let streamUrl = "";
+        statusText.innerText = "Searching for audio stream...";
 
-        statusText.innerText = "Step 1: Looking for open audio path...";
-
-        for (let baseUrl of instances) {
+        for (let base of instances) {
             try {
-                const pipedUrl = `${baseUrl}/streams/${videoId}`;
-                const response = await fetch(proxy + encodeURIComponent(pipedUrl));
-                if (response.ok) {
-                    pipedData = await response.json();
-                    success = true;
-                    break; 
+                const res = await fetch(proxy + encodeURIComponent(`${base}/streams/${videoId}`));
+                if (res.ok) {
+                    const data = await res.json();
+                    const stream = data.audioStreams.find(s => s.bitrate > 0) || data.audioStreams[0];
+                    if (stream) { streamUrl = stream.url; break; }
                 }
-            } catch (e) { console.log("AJ Debug: Server failed, trying next..."); }
+            } catch (e) { continue; }
         }
 
-        if (!success || !pipedData) {
-            throw new Error("YouTube is currently blocking all paths. Try a different video link or wait 2 minutes.");
-        }
+        if (!streamUrl) throw new Error("Could not find video data. Try another link.");
 
-        try {
-            const audioStream = pipedData.audioStreams.find(s => s.bitrate > 0) || pipedData.audioStreams[0];
-            if (!audioStream) throw new Error("No readable audio stream found.");
+        statusText.innerText = "Downloading audio file...";
+        const audioRes = await fetch(proxy + encodeURIComponent(streamUrl));
+        const audioBlob = await audioRes.blob();
 
-            statusText.innerText = "Step 2: Securely capturing audio...";
-            // Downloading with the new proxy
-            const audioResp = await fetch(proxy + encodeURIComponent(audioStream.url));
-            if (!audioResp.ok) throw new Error("Failed to capture audio stream.");
-            const audioBlob = await audioResp.blob();
+        statusText.innerText = "Uploading to AI Server...";
+        const upRes = await fetch('https://api.assemblyai.com/v2/upload', {
+            method: 'POST',
+            headers: { 'authorization': key },
+            body: audioBlob
+        });
+        const upData = await upRes.json();
 
-            statusText.innerText = "Step 3: Sending to AssemblyAI (Universal-3-Pro)...";
-            const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
-                method: 'POST',
-                headers: { 'authorization': key },
-                body: audioBlob
-            });
-            const uploadData = await uploadRes.json();
-            if (!uploadData.upload_url) throw new Error("Upload to AI failed!");
-
-            statusText.innerText = "Step 4: AI is processing (95% Accuracy Mode)...";
-            const transcriptRes = await fetch('https://api.assemblyai.com/v2/transcript', {
-                method: 'POST',
-                headers: { 'authorization': key, 'content-type': 'application/json' },
-                body: JSON.stringify({ 
-                    audio_url: uploadData.upload_url,
-                    speech_models: ["universal-3-pro"] 
-                })
-            });
-            const transcriptData = await transcriptRes.json();
-            checkStatusAAI(transcriptData.id, key);
-
-        } catch (err) {
-            throw err;
-        }
+        statusText.innerText = "AI is Transcribing (95% Accuracy)...";
+        const transRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+            method: 'POST',
+            headers: { 'authorization': key, 'content-type': 'application/json' },
+            body: JSON.stringify({ audio_url: upData.upload_url, speech_models: ["universal-3-pro"] })
+        });
+        const transData = await transRes.json();
+        
+        pollAAI(transData.id, key);
     }
 
-            statusText.innerText = "Step 3: Uploading to AssemblyAI...";
-            const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
-                method: 'POST',
-                headers: { 'authorization': key },
-                body: audioBlob
-            });
-            const uploadData = await uploadRes.json();
-
-            statusText.innerText = "Step 4: AI Transcribing (Universal-3-Pro)...";
-            const transcriptRes = await fetch('https://api.assemblyai.com/v2/transcript', {
-                method: 'POST',
-                headers: { 'authorization': key, 'content-type': 'application/json' },
-                body: JSON.stringify({ 
-                    audio_url: uploadData.upload_url,
-                    speech_models: ["universal-3-pro"] 
-                })
-            });
-            const transcriptData = await transcriptRes.json();
-            checkStatusAAI(transcriptData.id, key);
-        } catch (err) {
-            throw err;
-        }
-    }
-
-    async function checkStatusAAI(id, key) {
-        const checkInterval = setInterval(async () => {
+    function pollAAI(id, key) {
+        const interval = setInterval(async () => {
             try {
                 const res = await fetch(`https://api.assemblyai.com/v2/transcript/${id}`, {
                     headers: { 'authorization': key }
                 });
-                const statusData = await res.json();
-                if (statusData.status === 'completed') {
-                    clearInterval(checkInterval);
-                    showResult(statusData.text);
-                } else if (statusData.status === 'error') {
-                    clearInterval(checkInterval);
-                    alert("AI Error: " + statusData.error);
+                const data = await res.json();
+                if (data.status === 'completed') {
+                    clearInterval(interval);
+                    statusArea.classList.add('hidden');
+                    resultArea.classList.remove('hidden');
+                    transcriptOutput.innerText = data.text;
+                } else if (data.status === 'error') {
+                    clearInterval(interval);
+                    alert("AI Failed: " + data.error);
                     statusArea.classList.add('hidden');
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) { console.log(e); }
         }, 5000);
-    }
-
-    async function handleGroq(key, videoId) {
-        // Groq logic is currently limited by browser CORS
-        alert("Bhai, Groq is still being fixed. Please use AssemblyAI for now!");
-        statusArea.classList.add('hidden');
-    }
-
-    function showResult(text) {
-        statusArea.classList.add('hidden');
-        resultArea.classList.remove('hidden');
-        transcriptOutput.innerText = text;
     }
 </script>
 </body>
