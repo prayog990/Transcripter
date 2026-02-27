@@ -100,7 +100,7 @@
         </div>
 
         <footer class="text-center mt-10 text-gray-500 text-sm">
-            Designed with ❤️ by AJ | Version 1.10
+            Designed with ❤️ by AJ | Version 1.11
             https://youtu.be/P-c52MrWeGM?si=_Vx4cqVqp0mMKnB5
         </footer>
     </div>
@@ -176,18 +176,29 @@
 
     async function handleAssemblyAI(key, videoId) {
         try {
-            statusText.innerText = "Step 1: Getting Audio Link...";
-            const pipedApi = `https://pipedapi.kavin.rocks/streams/${videoId}`;
-            const pipedResp = await fetch(pipedApi);
-            if (!pipedResp.ok) throw new Error("Server busy. Please try again in 10 seconds.");
+            // AJ Pro-Tip: Using multiple proxies to ensure success
+            const proxy = "https://api.allorigins.win/raw?url=";
+            
+            statusText.innerText = "Step 1: Bypassing YouTube Restrictions...";
+            const pipedUrl = `https://pipedapi.kavin.rocks/streams/${videoId}`;
+            
+            // Fetching via Proxy to avoid CORS 'Failed to fetch'
+            const pipedResp = await fetch(proxy + encodeURIComponent(pipedUrl));
+            if (!pipedResp.ok) throw new Error("Connection failed. Try again in 5 seconds.");
             
             const pipedData = await pipedResp.json();
             const audioStream = pipedData.audioStreams.find(s => s.bitrate > 0) || pipedData.audioStreams[0];
-            if (!audioStream) throw new Error("No audio stream found.");
+            if (!audioStream) throw new Error("Audio stream blocked. Try another video.");
 
-            statusText.innerText = "Step 2: Downloading Audio...";
-            const audioResp = await fetch(audioStream.url);
+            statusText.innerText = "Step 2: Capturing Audio Data...";
+            // Downloading the actual audio file through proxy as well
+            const audioResp = await fetch(proxy + encodeURIComponent(audioStream.url));
+            if (!audioResp.ok) throw new Error("Audio download failed at Step 2.");
             const audioBlob = await audioResp.blob();
+
+            if (audioBlob.size < 100) throw new Error("Received empty audio file. Try again.");
+
+            statusText.innerText = "Step 3: Handing over to AssemblyAI...";
 
             statusText.innerText = "Step 3: Uploading to AssemblyAI...";
             const uploadRes = await fetch('https://api.assemblyai.com/v2/upload', {
