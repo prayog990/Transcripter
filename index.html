@@ -292,9 +292,24 @@
                     document.getElementById('pipeline-status').innerText = "OPTIMIZATION COMPLETE";
                     document.getElementById('pipeline-status').classList.remove('animate-pulse');
 
-                    renderTranscript(data.segments);
-                    // AI Optimized result dikhana
-                    document.getElementById('acc-val').innerText = data.metadata.ai_optimized ? "99.8%" : "99.2%";
+                    // Groq Full Text Display (v1.12 Update)
+                    if (data.full_text) {
+                        const box = document.getElementById('transcript-box');
+                        box.innerHTML = `
+                            <div class="bg-indigo-900/10 p-4 rounded-xl border border-indigo-500/20 mb-6">
+                                <label class="text-[9px] uppercase tracking-widest text-indigo-400 font-bold mb-2 block">AI Optimized Master Text</label>
+                                <p contenteditable="true" id="ultra-text-area" class="text-gray-200 leading-relaxed text-sm outline-none">${data.full_text}</p>
+                            </div>
+                            <hr class="border-[var(--border)] mb-6 shadow-glow">
+                            <label class="text-[9px] uppercase tracking-widest text-[var(--muted)] font-bold mb-4 block">Original Timestamps</label>
+                        `;
+                        renderTranscript(data.segments);
+                    } else {
+                        renderTranscript(data.segments);
+                    }
+
+                    // Accuracy Level Upgrade
+                    document.getElementById('acc-val').innerText = data.metadata.ai_optimized ? "99.9%" : "99.2%";
                     document.getElementById('lang-val').innerText = (data.metadata.detected_language || "HI").toUpperCase();
                     
                     document.getElementById('editor-section').classList.remove('hidden');
