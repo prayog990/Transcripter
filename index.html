@@ -158,9 +158,27 @@
                 const data = await res.json();
 
                 if(data.segments) {
-                    // Update Timings in UI
-                    document.getElementById('t-upload').innerText = (data.timings.upload_time || 0) + "s";
+                    // Update Timings with Error Checking
+                    const formatTime = (val) => (typeof val === 'number') ? val + "s" : "ERR";
+                    
+                    document.getElementById('t-upload').innerText = formatTime(data.timings.upload_time);
                     updateStep('upload', 'done');
+                    
+                    document.getElementById('t-chunk').innerText = formatTime(data.timings.chunking_time);
+                    updateStep('chunk', 'done');
+                    
+                    document.getElementById('t-whisper').innerText = formatTime(data.timings.whisper_time);
+                    updateStep('whisper', 'done');
+                    
+                    document.getElementById('t-firebase').innerText = formatTime(data.timings.firebase_sync_time);
+                    updateStep('firebase', 'done');
+                    
+                    // Specific logic for Groq Error display
+                    const gTime = data.timings.groq_time;
+                    const groqLabel = document.getElementById('t-groq');
+                    groqLabel.innerText = formatTime(gTime);
+                    if(typeof gTime !== 'number') groqLabel.style.color = "#ff4d4d";
+                    updateStep('groq', 'done');
                     
                     document.getElementById('t-chunk').innerText = (data.timings.chunking_time || 0) + "s";
                     updateStep('chunk', 'done');
