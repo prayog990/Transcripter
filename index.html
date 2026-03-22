@@ -3,411 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Ultra Transcribe — Professional Self-Learning Engine</title>
-    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <title>AI Transcribe Ultra v2.0</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        :root {
-            --bg: #0a0a0f;
-            --surface: #111118;
-            --surface2: #18181f;
-            --border: #2a2a38;
-            --accent: #00e5a0;
-            --accent2: #7c5cfc;
-            --text: #e8e8f0;
-            --muted: #6b6b85;
-        }
-
-        body {
-            font-family: 'JetBrains Mono', monospace;
-            background: var(--bg);
-            color: var(--text);
-            background-image: linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
-                              linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
-            background-size: 40px 40px;
-        }
-
-        .glass { background: rgba(17, 17, 24, 0.8); backdrop-filter: blur(10px); }
-        
-        .step-icon.active {
-            border-color: var(--accent);
-            background: rgba(0,229,160,0.1);
-            box-shadow: 0 0 12px rgba(0,229,160,0.2);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-
-        .transcript-line:hover { background: var(--surface2); }
-        .ts-text { font-family: 'Syne', sans-serif; font-size: 1.1rem; }
-        
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+        :root { --accent: #00e5a0; --accent2: #7c5cfc; --bg: #0a0a0f; }
+        body { font-family: 'JetBrains Mono', monospace; background: var(--bg); color: #e8e8f0; }
+        .setup-card { background: rgba(17, 17, 24, 0.9); border: 1px solid #2a2a38; }
+        .step-box { border: 1px solid #2a2a38; background: #111118; transition: all 0.3s; }
+        .step-box.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,229,160,0.2); }
+        .step-box.done { background: rgba(0,229,160,0.05); border-color: var(--accent); }
+        .timer-label { font-size: 9px; color: var(--accent); margin-top: 4px; font-weight: bold; }
+        .master-scroll { height: 400px; overflow-y: auto; border: 1px solid #2a2a38; border-radius: 12px; }
+        .master-scroll::-webkit-scrollbar { width: 4px; }
+        .master-scroll::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 10px; }
+        .hidden { display: none; }
     </style>
 </head>
-<body class="min-h-screen">
+<body class="min-h-screen p-4">
 
-    <!-- Header -->
-    <header class="border-b border-[var(--border)] p-4 glass sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center">
-            <div class="flex items-center gap-3">
-                <div class="bg-[var(--accent)] w-10 h-10 rounded-lg flex items-center justify-center text-black font-bold text-xl">◈</div>
-                <h1 class="text-xl font-bold tracking-tighter">AI Transcribe <span class="text-[var(--accent)]">Ultra</span></h1>
-                <span class="text-[9px] border border-[var(--accent)] text-[var(--accent)] px-2 py-0.5 rounded-full uppercase ml-2">Self-Learning</span>
-            </div>
-            <div id="engine-status" class="text-xs flex items-center gap-2 text-[var(--muted)]">
-                <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span> Connecting to Engine...
-            </div>
-        </div>
-    </header>
+    <!-- PAGE 1: SETUP -->
+    <div id="setup-page" class="max-w-xl mx-auto mt-10 space-y-8">
+        <header class="text-center">
+            <h1 class="text-3xl font-extrabold font-['Syne']">AI Transcribe <span class="text-[var(--accent)]">Ultra</span></h1>
+            <p class="text-xs text-gray-500 mt-2 uppercase tracking-widest">Self-Learning v2.0</p>
+        </header>
 
-    <div class="container mx-auto grid grid-cols-1 lg:grid-cols-12 gap-0">
-        
-        <!-- Sidebar (Claude Style) -->
-        <aside class="lg:col-span-3 border-r border-[var(--border)] p-6 flex flex-col gap-8 h-[calc(100vh-73px)] overflow-y-auto">
-            
+        <div class="setup-card p-8 rounded-3xl space-y-6 shadow-2xl">
             <div>
-                <label class="text-[9px] uppercase tracking-widest text-[var(--muted)] mb-3 block">1. Input File</label>
-                <div id="dropZone" onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-[var(--border)] rounded-xl p-8 text-center cursor-pointer hover:border-[var(--accent)] transition-all bg-[var(--surface)]">
-                    <i class="fas fa-microphone-alt text-3xl mb-3 text-[var(--muted)]"></i>
-                    <p class="text-xs font-semibold" id="fileNameDisp">Drop file or Browse</p>
-                    <p class="text-[10px] text-[var(--muted)] mt-1">Video/Audio Supported</p>
+                <label class="text-[10px] uppercase text-gray-500 mb-3 block">1. Input File</label>
+                <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-[#2a2a38] rounded-2xl p-10 text-center cursor-pointer hover:border-[var(--accent)] transition-all bg-[#0d0d14]">
+                    <i class="fas fa-cloud-upload-alt text-4xl mb-4 text-gray-600"></i>
+                    <p class="text-sm font-bold" id="fileNameDisp">Drop file or Click</p>
                 </div>
-                <input type="file" id="fileInput" class="hidden" onchange="handleFile(event)">
+                <input type="file" id="fileInput" class="hidden" onchange="document.getElementById('fileNameDisp').innerText = this.files[0].name">
             </div>
 
             <div>
-                <label class="text-[9px] uppercase tracking-widest text-[var(--muted)] mb-3 block">2. Processing Mode</label>
-                <select id="modeSelect" class="w-full bg-[var(--surface)] border border-[var(--border)] p-3 rounded-lg text-sm outline-none focus:border-[var(--accent)]">
-                    <option value="auto">Auto (System Decisions)</option>
-                    <option value="fast">Fast Mode (Speed Focus)</option>
-                    <option value="ultra" selected>Ultra Accuracy (Full Pipeline)</option>
+                <label class="text-[10px] uppercase text-gray-500 mb-3 block">2. Processing Mode</label>
+                <select class="w-full bg-[#111118] border border-[#2a2a38] p-4 rounded-xl text-sm outline-none">
+                    <option>Auto (High Accuracy)</option>
+                    <option>Fast Mode</option>
                 </select>
             </div>
 
             <div>
-                <label class="text-[9px] uppercase tracking-widest text-[var(--muted)] mb-3 block">3. Domain Vocabulary</label>
-                <div class="flex gap-2">
-                    <input type="text" id="vocabInput" placeholder="Add word..." class="flex-1 bg-[var(--surface)] border border-[var(--border)] p-2 rounded text-xs outline-none">
-                    <button onclick="addVocab()" class="bg-[var(--accent)] text-black px-3 rounded font-bold">+</button>
-                </div>
-                <div id="vocabTags" class="flex flex-wrap gap-2 mt-3">
-                    <span class="text-[10px] bg-purple-900/30 text-purple-400 border border-purple-500/30 px-2 py-1 rounded">Hinglish</span>
-                </div>
+                <label class="text-[10px] uppercase text-gray-500 mb-3 block">3. Domain Vocab</label>
+                <input type="text" placeholder="Add custom words..." class="w-full bg-[#111118] border border-[#2a2a38] p-4 rounded-xl text-sm outline-none">
             </div>
 
-            <button onclick="startUltraProcessing()" id="processBtn" class="w-full bg-[var(--accent)] text-black py-4 rounded-xl font-extrabold uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-green-500/20 disabled:opacity-50">
-                ▶ Start Pipeline
+            <button onclick="startPipeline()" class="w-full bg-[var(--accent)] text-black py-5 rounded-2xl font-black uppercase tracking-tighter hover:scale-[1.02] transition-all shadow-lg shadow-green-500/20">
+                🚀 Start Pipeline
             </button>
-        </aside>
+        </div>
+    </div>
 
-        <!-- Main Content (DeepSeek + Claude Hybrid) -->
-        <main class="lg:col-span-9 p-8 h-[calc(100vh-73px)] overflow-y-auto">
-            
-            <!-- Pipeline Visualizer -->
-            <div class="bg-[var(--surface)] border border-[var(--border)] rounded-2xl p-6 mb-8">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-sm font-bold tracking-tight uppercase">AI Processing Pipeline</h3>
-                    <span id="pipeline-status" class="text-[10px] text-[var(--muted)] tracking-widest">READY TO SYNC</span>
-                </div>
-                <div class="flex gap-4 overflow-x-auto pb-4" id="pipeline-steps">
-                    <!-- Steps will be injected here -->
-                </div>
+    <!-- PAGE 2: MONITOR & RESULTS -->
+    <div id="monitor-page" class="max-w-4xl mx-auto hidden space-y-6">
+        <!-- Pipeline Visualizer -->
+        <div class="bg-[#111118] border border-[#2a2a38] p-6 rounded-3xl">
+            <div class="flex justify-between items-center mb-6">
+                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Execution Pipeline</span>
+                <span id="global-status" class="text-[9px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded">SYNCING...</span>
             </div>
-
-            <!-- Loader / Empty State -->
-            <div id="empty-state" class="text-center py-20 border border-[var(--border)] rounded-3xl border-dashed">
-                <i class="fas fa-wave-square text-6xl text-[var(--muted)] opacity-20 mb-6"></i>
-                <h2 class="text-2xl font-bold opacity-30">No Data Processed Yet</h2>
-                <p class="text-[var(--muted)] text-sm mt-2">Upload a file to trigger the Ultra-Accuracy pipeline.</p>
-            </div>
-
-            <!-- Editor Section (Hidden initially) -->
-            <div id="editor-section" class="hidden animate-in fade-in duration-700">
-                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    
-                    <!-- Media & Metrics -->
-                    <div class="lg:col-span-1 space-y-6">
-                        <div class="bg-black rounded-2xl overflow-hidden border border-[var(--border)]">
-                            <video id="mediaPlayer" controls class="w-full aspect-video"></video>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-[var(--surface)] p-4 rounded-xl border border-[var(--border)]">
-                                <label class="text-[9px] text-[var(--muted)] uppercase">Accuracy</label>
-                                <div id="acc-val" class="text-xl font-bold text-[var(--accent)]">98.1%</div>
-                            </div>
-                            <div class="bg-[var(--surface)] p-4 rounded-xl border border-[var(--border)]">
-                                <label class="text-[9px] text-[var(--muted)] uppercase">Lang</label>
-                                <div id="lang-val" class="text-xl font-bold text-[var(--accent2)]">HI</div>
-                            </div>
-                        </div>
-
-                        <div class="bg-[var(--surface2)] p-4 rounded-xl border border-[var(--border)]">
-                            <label class="text-[9px] text-[var(--muted)] uppercase mb-3 block text-center">Actions & Exports</label>
-                            <div class="flex flex-col gap-2">
-                                <button onclick="saveLearning()" id="learnBtn" class="text-xs bg-[var(--accent2)] text-white py-3 rounded font-extrabold shadow-lg shadow-indigo-500/20 mb-2 hover:scale-105 transition-all">
-                                    <i class="fas fa-brain mr-1"></i> SAVE LEARNING
-                                </button>
-                                <div class="flex gap-2">
-                                    <button onclick="download('txt')" class="flex-1 text-[10px] bg-white/5 py-2 rounded hover:bg-white/10 transition border border-[var(--border)]">TXT</button>
-                                    <button onclick="download('srt')" class="flex-1 text-[10px] bg-[var(--accent)] text-black py-2 rounded font-bold hover:scale-105 transition-all">SRT</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Transcript Area -->
-                    <div class="lg:col-span-2">
-                        <div class="bg-[var(--surface)] border border-[var(--border)] rounded-2xl flex flex-col h-[600px]">
-                            <div class="p-4 border-b border-[var(--border)] flex justify-between items-center glass rounded-t-2xl">
-                                <span class="text-xs font-bold uppercase tracking-widest">Master Transcript</span>
-                                <span class="text-[10px] text-green-500">Auto-Saving Enabled</span>
-                            </div>
-                            <div id="transcript-box" class="flex-grow overflow-y-auto p-6 space-y-4">
-                                <!-- AI Text comes here -->
-                            </div>
-                        </div>
-                    </div>
-
+            <div class="flex items-center justify-between overflow-x-auto pb-4 gap-4" id="pipeline-row">
+                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-upload">
+                    <i class="fas fa-file-upload"></i> <span class="text-[8px] mt-2">UPLOAD</span>
+                    <div class="timer-label" id="t-upload">--</div>
+                </div>
+                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-chunk">
+                    <i class="fas fa-cut"></i> <span class="text-[8px] mt-2">CHUNKING</span>
+                    <div class="timer-label" id="t-chunk">--</div>
+                </div>
+                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-whisper">
+                    <i class="fas fa-brain"></i> <span class="text-[8px] mt-2">WHISPER</span>
+                    <div class="timer-label" id="t-whisper">--</div>
+                </div>
+                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-firebase">
+                    <i class="fas fa-database"></i> <span class="text-[8px] mt-2">FIREBASE</span>
+                    <div class="timer-label" id="t-firebase">--</div>
+                </div>
+                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-groq">
+                    <i class="fas fa-bolt"></i> <span class="text-[8px] mt-2">GROQ AI</span>
+                    <div class="timer-label" id="t-groq">--</div>
                 </div>
             </div>
+        </div>
 
-        </main>
+        <!-- Media Player -->
+        <div class="bg-black rounded-3xl overflow-hidden border border-[#2a2a38]">
+            <video id="mediaPlayer" controls class="w-full aspect-video bg-[#000]"></video>
+        </div>
+
+        <!-- Result Stats -->
+        <div class="grid grid-cols-2 gap-4">
+            <div class="bg-[#111118] p-4 rounded-2xl border border-[#2a2a38]">
+                <p class="text-[9px] text-gray-500 uppercase">Accuracy</p>
+                <p class="text-xl font-bold text-[var(--accent)]" id="acc-val">99.9%</p>
+            </div>
+            <div class="bg-[#111118] p-4 rounded-2xl border border-[#2a2a38]">
+                <p class="text-[9px] text-gray-500 uppercase">Language</p>
+                <p class="text-xl font-bold text-indigo-400" id="lang-val">HI-IN</p>
+            </div>
+        </div>
+
+        <!-- Master Transcript -->
+        <div class="bg-[#111118] border border-[#2a2a38] rounded-3xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xs font-bold uppercase tracking-widest">Master Transcript</h3>
+                <span class="text-[9px] text-green-500 flex items-center gap-1"><i class="fas fa-circle text-[6px]"></i> AUTO-SAVING</span>
+            </div>
+            <div class="master-scroll p-6 bg-[#0a0a0f]" id="transcript-box">
+                <p class="text-gray-500 text-sm italic">Waiting for processing results...</p>
+            </div>
+        </div>
+
+        <!-- Footer Actions -->
+        <div class="flex gap-4 pb-10">
+            <button onclick="downloadAsText()" class="flex-1 bg-white/5 py-5 rounded-2xl font-bold text-xs hover:bg-white/10 transition border border-[#2a2a38]">
+                <i class="fas fa-download mr-2"></i> DOWNLOAD AS TEXT
+            </button>
+            <button onclick="window.location.reload()" class="bg-red-500/10 text-red-400 px-8 rounded-2xl font-bold text-xs border border-red-500/20">
+                RESET
+            </button>
+        </div>
     </div>
 
     <script>
         const HF_URL = "https://pryog-ai-ultra-transcribe.hf.space";
         let selectedFile = null;
 
-        const steps = [
-            { icon: "📥", label: "Upload" },
-            { icon: "🧹", label: "Cleanup" },
-            { icon: "🎙", label: "VAD" },
-            { icon: "🧠", label: "Whisper" },
-            { icon: "🧩", label: "Consensus" },
-            { icon: "✦", label: "Self-Learn" }
-        ];
+        let pollingInterval = null;
 
-        // Initialize Pipeline UI
-        function initPipeline() {
-            const container = document.getElementById('pipeline-steps');
-            container.innerHTML = steps.map((s, i) => `
-                <div class="flex items-center gap-3 shrink-0">
-                    <div id="step-${i}" class="step-icon w-12 h-12 rounded-xl border border-[var(--border)] bg-[var(--surface2)] flex items-center justify-center text-xl">
-                        ${s.icon}
-                    </div>
-                    <div class="text-center">
-                        <div class="text-[8px] uppercase tracking-tighter text-[var(--muted)]">${s.label}</div>
-                    </div>
-                    ${i < steps.length - 1 ? '<div class="w-8 h-[1px] bg-[var(--border)]"></div>' : ''}
-                </div>
-            `).join('');
-        }
-        initPipeline();
-
-        // Check for Saved Data on Page Load
-        window.addEventListener('DOMContentLoaded', () => {
-            const savedData = localStorage.getItem('ultra_transcribe_save');
-            if (savedData) {
-                const data = JSON.parse(savedData);
-                renderTranscript(data.segments);
-                document.getElementById('acc-val').innerText = data.accuracy || "99.2%";
-                document.getElementById('lang-val').innerText = data.lang || "HI";
-                document.getElementById('empty-state').classList.add('hidden');
-                document.getElementById('editor-section').classList.remove('hidden');
-                console.log("Bhai ji, purana data restore kar liya gaya hai!");
-            }
-        });
-
-        // Check Backend Status
-        async function checkEngine() {
-            try {
-                const r = await fetch(HF_URL + "/");
-                if(r.ok) {
-                    document.getElementById('engine-status').innerHTML = `<span class="w-2 h-2 rounded-full bg-[var(--accent)]"></span> AI Engine Master Ready`;
-                }
-            } catch(e) {}
-        }
-        setInterval(checkEngine, 10000);
-        checkEngine();
-
-        function handleFile(e) {
-            selectedFile = e.target.files[0];
-            if(!selectedFile) return;
-            document.getElementById('fileNameDisp').innerText = selectedFile.name;
+        async function startPipeline() {
+            const fileInput = document.getElementById('fileInput');
+            if(!fileInput.files[0]) return alert("Bhai ji, file select kijiye!");
             
-            const url = URL.createObjectURL(selectedFile);
-            const player = document.getElementById('mediaPlayer');
-            player.src = url;
-            
-            // UI Update: Hide empty state and show editor
-            document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('editor-section').classList.remove('hidden');
-            console.log("Bhai ji, file ready hai!");
-        }
-
-        async function startUltraProcessing() {
-            if(!selectedFile) return alert("Bhai ji, pehle file select karein!");
-            
-            document.getElementById('processBtn').disabled = true;
-            document.getElementById('processBtn').innerText = "Processing...";
-            
-            let stepIndex = 0;
-            const stepInterval = setInterval(() => {
-                if(stepIndex < 5) {
-                    updateStep(stepIndex, 'active');
-                    if(stepIndex > 0) updateStep(stepIndex-1, 'done');
-                    stepIndex++;
-                }
-            }, 3000);
+            selectedFile = fileInput.files[0];
+            document.getElementById('setup-page').classList.add('hidden');
+            document.getElementById('monitor-page').classList.remove('hidden');
+            document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
 
             const formData = new FormData();
             formData.append('file', selectedFile);
-            formData.append('mode', document.getElementById('modeSelect').value);
 
             try {
-                const response = await fetch(HF_URL + "/transcribe", { method: "POST", body: formData });
-                const data = await response.json();
-                clearInterval(stepInterval);
+                // 1. Start Job
+                const res = await fetch(HF_URL + "/transcribe", { method: "POST", body: formData });
+                const { job_id } = await res.json();
 
-                if(data.segments) {
-                    for(let i=0; i<6; i++) updateStep(i, 'done');
-                    document.getElementById('pipeline-status').innerText = "OPTIMIZATION COMPLETE";
-                    
-                    const box = document.getElementById('transcript-box');
-                    box.innerHTML = ""; // Clear existing
+                // 2. Start Polling for Status
+                pollingInterval = setInterval(() => checkJobStatus(job_id), 2000);
 
-                    if (data.full_text) {
-                        box.innerHTML += `
-                            <div class="bg-indigo-900/10 p-5 rounded-2xl border border-indigo-500/30 mb-8 shadow-lg">
-                                <label class="text-[10px] uppercase text-indigo-400 font-bold block mb-2">◈ AI Master Optimized Text</label>
-                                <p contenteditable="true" id="ultra-text-area" class="text-white leading-relaxed text-md outline-none">${data.full_text}</p>
-                            </div>
-                            <div class="flex items-center gap-4 mb-6 opacity-20"><hr class="flex-1 border-[var(--border)]"><span class="text-[8px] uppercase">Original Segments</span><hr class="flex-1 border-[var(--border)]"></div>
-                        `;
-                    }
-                    renderTranscript(data.segments);
-                    
-                    document.getElementById('acc-val').innerText = data.metadata.ai_optimized ? "99.9%" : "99.2%";
-                    document.getElementById('lang-val').innerText = (data.metadata.lang || "HI").toUpperCase();
-                }
-            } catch(err) {
-                clearInterval(stepInterval);
-                alert("Error: " + err.message);
-                document.getElementById('pipeline-status').innerText = "ENGINE ERROR";
-            } finally {
-                document.getElementById('processBtn').disabled = false;
-                document.getElementById('processBtn').innerText = "▶ Start Pipeline";
+            } catch(e) {
+                alert("Upload Error: " + e.message);
+                document.getElementById('global-status').innerText = "UPLOAD FAILED";
             }
         }
 
-        function updateStep(index, status) {
-            const el = document.getElementById(`step-${index}`);
+        async function checkJobStatus(id) {
+            try {
+                const res = await fetch(HF_URL + "/status/" + id);
+                const job = await res.json();
+
+                // Update UI based on current step
+                if(job.status === "chunking") updateStep('upload', 'done');
+                if(job.status === "whisper") updateStep('chunk', 'done');
+                if(job.status === "firebase") updateStep('whisper', 'done');
+                if(job.status === "groq") updateStep('firebase', 'done');
+
+                // Update Timings if available
+                if(job.timings.upload) document.getElementById('t-upload').innerText = job.timings.upload + "s";
+                if(job.timings.chunking) document.getElementById('t-chunk').innerText = job.timings.chunking + "s";
+                if(job.timings.whisper) document.getElementById('t-whisper').innerText = job.timings.whisper + "s";
+                if(job.timings.firebase) document.getElementById('t-firebase').innerText = job.timings.firebase + "s";
+                if(job.timings.groq) {
+                    const gVal = job.timings.groq;
+                    document.getElementById('t-groq').innerText = (typeof gVal === 'number') ? gVal + "s" : gVal;
+                    if(typeof gVal !== 'number') document.getElementById('t-groq').style.color = "red";
+                }
+
+                if(job.status === "completed") {
+                    clearInterval(pollingInterval);
+                    updateStep('groq', 'done');
+                    document.getElementById('global-status').innerText = "COMPLETED";
+                    document.getElementById('global-status').className = "text-[9px] bg-green-500/10 text-green-400 px-2 py-1 rounded";
+                    renderMasterResult(job.result.full_text, job.result.segments);
+                    if(job.errors.length > 0) alert("Bhai ji, Groq me kuch issue tha: " + job.errors.join(", "));
+                }
+
+                if(job.status === "failed") {
+                    clearInterval(pollingInterval);
+                    document.getElementById('global-status').innerText = "TASK FAILED";
+                    alert("System Error: " + job.errors.join("\n"));
+                }
+            } catch(e) { console.error("Polling error", e); }
+        }
+
+        function updateStep(id, status) {
+            const el = document.getElementById('step-' + id);
             if(status === 'active') el.classList.add('active');
-            if(status === 'done') {
-                el.classList.remove('active');
-                el.style.borderColor = "var(--accent)";
-                el.style.background = "rgba(0,229,160,0.05)";
-            }
+            if(status === 'done') { el.classList.remove('active'); el.classList.add('done'); }
         }
 
-        function renderTranscript(segments) {
+        function renderMasterResult(fullText, segments) {
             const box = document.getElementById('transcript-box');
-            box.innerHTML = segments.map(s => `
-                <div class="transcript-line group flex gap-4 border-l-2 border-transparent hover:border-[var(--accent)] pl-4 py-2 transition-all">
-                    <span class="text-[10px] font-bold text-[var(--muted)] w-12 pt-1 cursor-pointer" onclick="seekTo(${s.start})">${s.start}s</span>
-                    <!-- data-original AI ke raw text ko track karega -->
-                    <p contenteditable="true" data-original="${s.text}" class="ts-text flex-1 outline-none text-gray-300 focus:text-white" oninput="autoSaveData()">${s.text}</p>
+            box.innerHTML = `
+                <div class="mb-8">
+                    <label class="text-[9px] text-[var(--accent)] font-bold mb-4 block uppercase tracking-tighter">AI Optimized Final Output</label>
+                    <div contenteditable="true" class="text-white text-md leading-loose outline-none" id="final-p">${fullText}</div>
                 </div>
-            `).join('');
-            
-            autoSaveData();
+                <div class="opacity-20 my-8 border-t border-dashed border-white"></div>
+                <label class="text-[9px] text-gray-500 font-bold mb-4 block uppercase">Timestamp Breakdown</label>
+                <div class="space-y-4">
+                    ${segments.map(s => `
+                        <div class="flex gap-4 group">
+                            <span class="text-[10px] text-gray-600 font-bold w-12 pt-1 cursor-pointer hover:text-white" onclick="seek(${s.start})">${s.start}s</span>
+                            <p class="text-sm text-gray-400 group-hover:text-gray-200 transition-colors">${s.text}</p>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
         }
 
-        function autoSaveData() {
-            const segments = Array.from(document.querySelectorAll('.transcript-line')).map(line => ({
-                start: line.querySelector('span').innerText.replace('s', ''),
-                text: line.querySelector('p').innerText
-            }));
-            
-            const saveData = {
-                segments: segments,
-                accuracy: document.getElementById('acc-val').innerText,
-                lang: document.getElementById('lang-val').innerText,
-                timestamp: new Date().getTime()
-            };
-            
-            localStorage.setItem('ultra_transcribe_save', JSON.stringify(saveData));
+        function seek(t) { 
+            const p = document.getElementById('mediaPlayer');
+            p.currentTime = t; p.play(); 
         }
 
-        function seekTo(time) {
-            const video = document.getElementById('mediaPlayer');
-            video.currentTime = time;
-            video.play();
-        }
-
-        function download(fmt) {
-            const text = Array.from(document.querySelectorAll('.ts-text')).map(p => p.innerText).join('\n');
-            const blob = new Blob([text], {type: 'text/plain'});
-            const url = window.URL.createObjectURL(blob);
+        function downloadAsText() {
+            const text = document.getElementById('final-p').innerText;
+            const blob = new Blob([text], {type: 'text/plain;charset=utf-8'});
+            const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
-            a.href = url;
-            a.download = `transcript.${fmt}`;
-            a.click();
-        }
-
-        async function saveLearning() {
-            const lines = document.querySelectorAll('.ts-text');
-            const btn = document.getElementById('learnBtn');
-            let learnedCount = 0;
-            
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Syncing Cloud...';
-
-            for (let line of lines) {
-                const original = line.getAttribute('data-original');
-                const corrected = line.innerText.trim();
-
-                if (original !== corrected && corrected !== "") {
-                    const formData = new FormData();
-                    formData.append('original', original);
-                    formData.append('corrected', corrected);
-
-                    try {
-                        const res = await fetch(HF_URL + "/learn", { method: "POST", body: formData });
-                        if(res.ok) {
-                            line.setAttribute('data-original', corrected); // Update baseline
-                            learnedCount++;
-                        }
-                    } catch (e) { console.error("Cloud Sync Error"); }
-                }
-            }
-
-            btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-brain mr-1"></i> SAVE LEARNING';
-            
-            if (learnedCount > 0) {
-                alert(`Bhai ji, maine ${learnedCount} naye shabd Firebase me yaad kar liye hain! Agli baar ye apne aap sahi ho jayenge.`);
-            } else {
-                alert("Bhai ji, pehle editor me koi galat shabd theek to kijiye!");
-            }
-        }
-
-        function addVocab() {
-            const val = document.getElementById('vocabInput').value;
-            if(!val) return;
-            const span = document.createElement('span');
-            span.className = "text-[10px] bg-green-900/30 text-[var(--accent)] border border-[var(--accent)]/30 px-2 py-1 rounded";
-            span.innerText = val;
-            document.getElementById('vocabTags').appendChild(span);
-            document.getElementById('vocabInput').value = "";
+            a.href = url; a.download = "master_transcript.txt"; a.click();
         }
     </script>
 </body>
