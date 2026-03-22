@@ -240,34 +240,33 @@
 
         function handleFile(e) {
             selectedFile = e.target.files[0];
+            if(!selectedFile) return;
             document.getElementById('fileNameDisp').innerText = selectedFile.name;
-            if(selectedFile.type.startsWith('video')) {
-                document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
-            }
+            
+            const url = URL.createObjectURL(selectedFile);
+            const player = document.getElementById('mediaPlayer');
+            player.src = url;
+            
+            // UI Update: Hide empty state and show editor
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('editor-section').classList.remove('hidden');
+            console.log("Bhai ji, file ready hai!");
         }
 
         async function startUltraProcessing() {
-            if(!selectedFile) return alert("Bhai ji, file select karo!");
+            if(!selectedFile) return alert("Bhai ji, pehle file select karein!");
             
-            localStorage.removeItem('ultra_transcribe_save');
-            document.getElementById('empty-state').classList.add('hidden');
-            document.getElementById('editor-section').classList.add('hidden');
             document.getElementById('processBtn').disabled = true;
+            document.getElementById('processBtn').innerText = "Processing...";
             
-            // Real-time Visual Pipeline Start
             let stepIndex = 0;
-            let totalSecs = 0;
-            const timerInterval = setInterval(() => {
-                totalSecs++;
-                document.getElementById('pipeline-status').innerHTML = `PIPELINE ACTIVE (${totalSecs}s)`;
+            const stepInterval = setInterval(() => {
                 if(stepIndex < 5) {
                     updateStep(stepIndex, 'active');
-                    if(totalSecs % 10 === 0) { // Simulate progression feel
-                         updateStep(stepIndex, 'done');
-                         stepIndex++;
-                    }
+                    if(stepIndex > 0) updateStep(stepIndex-1, 'done');
+                    stepIndex++;
                 }
-            }, 1000);
+            }, 3000);
 
             const formData = new FormData();
             formData.append('file', selectedFile);
@@ -276,86 +275,33 @@
             try {
                 const response = await fetch(HF_URL + "/transcribe", { method: "POST", body: formData });
                 const data = await response.json();
-                clearInterval(timerInterval);
+                clearInterval(stepInterval);
 
                 if(data.segments) {
-                    // Force UI update with actual data
                     for(let i=0; i<6; i++) updateStep(i, 'done');
-                    document.getElementById('pipeline-status').innerText = "OPTIMIZATION SUCCESSFUL";
+                    document.getElementById('pipeline-status').innerText = "OPTIMIZATION COMPLETE";
                     
-                    // Render optimized view
                     const box = document.getElementById('transcript-box');
-                    const optimizedText = data.full_text || "Groq Sync Failed - Using Raw Segments";
-                    
-                    box.innerHTML = `
-                        <div class="bg-indigo-900/20 p-5 rounded-2xl border-2 border-indigo-500/40 mb-8 shadow-glow">
-                            <label class="text-[10px] uppercase text-indigo-300 font-extrabold block mb-2">◈ AI Master Optimized Text</label>
-                            <p contenteditable="true" id="ultra-text-area" class="text-white leading-relaxed text-md font-medium outline-none">${optimizedText}</p>
-                        </div>
-                        <div class="flex items-center gap-4 mb-6 opacity-20"><hr class="flex-1 border-[var(--border)]"><span class="text-[8px] uppercase">Segments below</span><hr class="flex-1 border-[var(--border)]"></div>
-                    `;
+                    box.innerHTML = ""; // Clear existing
+
+                    if (data.full_text) {
+                        box.innerHTML += `
+                            <div class="bg-indigo-900/10 p-5 rounded-2xl border border-indigo-500/30 mb-8 shadow-lg">
+                                <label class="text-[10px] uppercase text-indigo-400 font-bold block mb-2">◈ AI Master Optimized Text</label>
+                                <p contenteditable="true" id="ultra-text-area" class="text-white leading-relaxed text-md outline-none">${data.full_text}</p>
+                            </div>
+                            <div class="flex items-center gap-4 mb-6 opacity-20"><hr class="flex-1 border-[var(--border)]"><span class="text-[8px] uppercase">Original Segments</span><hr class="flex-1 border-[var(--border)]"></div>
+                        `;
+                    }
                     renderTranscript(data.segments);
                     
                     document.getElementById('acc-val').innerText = data.metadata.ai_optimized ? "99.9%" : "99.2%";
-                    document.getElementById('lang-val').innerText = (data.metadata.detected_language || "HI").toUpperCase();
-                    document.getElementById('editor-section').classList.remove('hidden');
+                    document.getElementById('lang-val').innerText = (data.metadata.lang || "HI").toUpperCase();
                 }
             } catch(err) {
-                clearInterval(timerInterval);
-                alert("Bhai ji, Engine side issue: " + err.message);
-                document.getElementById('pipeline-status').innerText = "ENGINE DISCONNECTED";
-            } finally {
-                document.getElementById('processBtn').disabled = false;
-            }
-        }
-
-            const formData = new FormData();
-            formData.append('file', selectedFile);
-            formData.append('mode', document.getElementById('modeSelect').value);
-
-            try {
-                const response = await fetch(HF_URL + "/transcribe", { method: "POST", body: formData });
-                const data = await response.json();
-
-                clearInterval(stepInterval); // Stop simulation
-
-                if(data.segments) {
-                    // Force complete all steps
-                    for(let i=0; i<6; i++) updateStep(i, 'done');
-                    document.getElementById('pipeline-status').innerText = "OPTIMIZATION COMPLETE";
-                    document.getElementById('pipeline-status').classList.remove('animate-pulse');
-
-                    // Groq Full Text Display (v1.12 Update)
-                    if (data.full_text) {
-                        const box = document.getElementById('transcript-box');
-                        box.innerHTML = `
-                            <div class="bg-indigo-900/10 p-4 rounded-xl border border-indigo-500/20 mb-6">
-                                <label class="text-[9px] uppercase tracking-widest text-indigo-400 font-bold mb-2 block">AI Optimized Master Text</label>
-                                <p contenteditable="true" id="ultra-text-area" class="text-gray-200 leading-relaxed text-sm outline-none">${data.full_text}</p>
-                            </div>
-                            <hr class="border-[var(--border)] mb-6 shadow-glow">
-                            <label class="text-[9px] uppercase tracking-widest text-[var(--muted)] font-bold mb-4 block">Original Timestamps</label>
-                        `;
-                        renderTranscript(data.segments);
-                    } else {
-                        renderTranscript(data.segments);
-                    }
-
-                    // Accuracy Level Upgrade
-                    document.getElementById('acc-val').innerText = data.metadata.ai_optimized ? "99.9%" : "99.2%";
-                    document.getElementById('lang-val').innerText = (data.metadata.detected_language || "HI").toUpperCase();
-                    
-                    document.getElementById('editor-section').classList.remove('hidden');
-                } else {
-                    throw new Error(data.error || "Bhai, AI ne jawab nahi diya!");
-                }
-            } catch(err) {
+                clearInterval(stepInterval);
                 alert("Error: " + err.message);
-                for(let i=0; i<6; i++) {
-                   const el = document.getElementById(`step-${i}`);
-                   el.classList.remove('active');
-                   el.style.borderColor = "red";
-                }
+                document.getElementById('pipeline-status').innerText = "ENGINE ERROR";
             } finally {
                 document.getElementById('processBtn').disabled = false;
                 document.getElementById('processBtn').innerText = "▶ Start Pipeline";
