@@ -53,48 +53,48 @@
                 <input type="text" placeholder="Add custom words..." class="w-full bg-[#111118] border border-[#2a2a38] p-4 rounded-xl text-sm outline-none">
             </div>
 
-            <button onclick="startPipeline()" class="w-full bg-[var(--accent)] text-black py-5 rounded-2xl font-black uppercase tracking-tighter hover:scale-[1.02] transition-all shadow-lg shadow-green-500/20">
+            <button onclick="startPipeline()" id="mainProcessBtn" class="w-full bg-[var(--accent)] text-black py-5 rounded-2xl font-black uppercase tracking-tighter hover:scale-[1.02] transition-all shadow-lg shadow-green-500/20">
                 🚀 Start Pipeline
             </button>
+
+            <!-- Pipeline moved to Setup Page (v2.3) -->
+            <div id="setup-pipeline" class="hidden mt-10 bg-[#111118] border border-[#2a2a38] p-6 rounded-3xl animate-pulse">
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Execution Status</span>
+                    <span id="global-status" class="text-[9px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded">SYNCING...</span>
+                </div>
+                <div class="flex items-center justify-between overflow-x-auto pb-4 gap-4" id="pipeline-row">
+                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-upload">
+                        <i class="fas fa-file-upload"></i> <span class="text-[8px] mt-2">UPLOAD</span>
+                        <div class="timer-label" id="t-upload">--</div>
+                    </div>
+                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-chunk">
+                        <i class="fas fa-cut"></i> <span class="text-[8px] mt-2">CHUNKING</span>
+                        <div class="timer-label" id="t-chunk">--</div>
+                    </div>
+                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-whisper">
+                        <i class="fas fa-brain"></i> <span class="text-[8px] mt-2">WHISPER</span>
+                        <div class="timer-label" id="t-whisper">--</div>
+                    </div>
+                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-firebase">
+                        <i class="fas fa-database"></i> <span class="text-[8px] mt-2">FIREBASE</span>
+                        <div class="timer-label" id="t-firebase">--</div>
+                    </div>
+                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
+                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-groq">
+                        <i class="fas fa-bolt"></i> <span class="text-[8px] mt-2">GROQ AI</span>
+                        <div class="timer-label" id="t-groq">--</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- PAGE 2: MONITOR & RESULTS -->
+    <!-- PAGE 2: RESULTS ONLY -->
     <div id="monitor-page" class="max-w-4xl mx-auto hidden space-y-6">
-        <!-- Pipeline Visualizer -->
-        <div class="bg-[#111118] border border-[#2a2a38] p-6 rounded-3xl">
-            <div class="flex justify-between items-center mb-6">
-                <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Execution Pipeline</span>
-                <span id="global-status" class="text-[9px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded">SYNCING...</span>
-            </div>
-            <div class="flex items-center justify-between overflow-x-auto pb-4 gap-4" id="pipeline-row">
-                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-upload">
-                    <i class="fas fa-file-upload"></i> <span class="text-[8px] mt-2">UPLOAD</span>
-                    <div class="timer-label" id="t-upload">--</div>
-                </div>
-                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-chunk">
-                    <i class="fas fa-cut"></i> <span class="text-[8px] mt-2">CHUNKING</span>
-                    <div class="timer-label" id="t-chunk">--</div>
-                </div>
-                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-whisper">
-                    <i class="fas fa-brain"></i> <span class="text-[8px] mt-2">WHISPER</span>
-                    <div class="timer-label" id="t-whisper">--</div>
-                </div>
-                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-firebase">
-                    <i class="fas fa-database"></i> <span class="text-[8px] mt-2">FIREBASE</span>
-                    <div class="timer-label" id="t-firebase">--</div>
-                </div>
-                <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-groq">
-                    <i class="fas fa-bolt"></i> <span class="text-[8px] mt-2">GROQ AI</span>
-                    <div class="timer-label" id="t-groq">--</div>
-                </div>
-            </div>
-        </div>
-
         <!-- Media Player -->
         <div class="bg-black rounded-3xl overflow-hidden border border-[#2a2a38]">
             <video id="mediaPlayer" controls class="w-full aspect-video bg-[#000]"></video>
@@ -128,8 +128,8 @@
             <button onclick="downloadAsText()" class="flex-1 bg-white/5 py-5 rounded-2xl font-bold text-xs hover:bg-white/10 transition border border-[#2a2a38]">
                 <i class="fas fa-download mr-2"></i> DOWNLOAD AS TEXT
             </button>
-            <button onclick="window.location.reload()" class="bg-red-500/10 text-red-400 px-8 rounded-2xl font-bold text-xs border border-red-500/20">
-                RESET
+            <button onclick="goBack()" class="bg-indigo-500/10 text-indigo-400 px-8 rounded-2xl font-bold text-xs border border-indigo-500/20">
+                <i class="fas fa-arrow-left mr-2"></i> BACK
             </button>
         </div>
     </div>
@@ -145,9 +145,11 @@
             if(!fileInput.files[0]) return alert("Bhai ji, file select kijiye!");
             
             selectedFile = fileInput.files[0];
-            document.getElementById('setup-page').classList.add('hidden');
-            document.getElementById('monitor-page').classList.remove('hidden');
-            document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
+            
+            // Show Pipeline on First Page
+            document.getElementById('setup-pipeline').classList.remove('hidden');
+            document.getElementById('mainProcessBtn').disabled = true;
+            document.getElementById('mainProcessBtn').innerText = "⚙️ PROCESSING...";
 
             const formData = new FormData();
             formData.append('file', selectedFile);
@@ -191,9 +193,18 @@
                 if(job.status === "completed") {
                     clearInterval(pollingInterval);
                     updateStep('groq', 'done');
-                    document.getElementById('global-status').innerText = "COMPLETED";
-                    document.getElementById('global-status').className = "text-[9px] bg-green-500/10 text-green-400 px-2 py-1 rounded";
-                    renderMasterResult(job.result.full_text, job.result.segments);
+                    
+                    // Switch to Result Page after completion
+                    setTimeout(() => {
+                        document.getElementById('setup-page').classList.add('hidden');
+                        document.getElementById('monitor-page').classList.remove('hidden');
+                        document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
+                        
+                        document.getElementById('global-status').innerText = "COMPLETED";
+                        document.getElementById('global-status').className = "text-[9px] bg-green-500/10 text-green-400 px-2 py-1 rounded";
+                        renderMasterResult(job.result.full_text, job.result.segments);
+                    }, 500);
+
                     if(job.errors.length > 0) alert("Bhai ji, Groq me kuch issue tha: " + job.errors.join(", "));
                 }
 
@@ -242,6 +253,25 @@
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url; a.download = "master_transcript.txt"; a.click();
+        }
+
+        function goBack() {
+            // Pages switch karein
+            document.getElementById('monitor-page').classList.add('hidden');
+            document.getElementById('setup-page').classList.remove('hidden');
+            
+            // Pipeline Status ko reset karein taki nayi file ke liye tayyar rahe
+            document.getElementById('global-status').innerText = "READY";
+            document.getElementById('global-status').className = "text-[9px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded";
+            
+            const steps = ['upload', 'chunk', 'whisper', 'firebase', 'groq'];
+            steps.forEach(id => {
+                const timerEl = document.getElementById('t-' + id);
+                const boxEl = document.getElementById('step-' + id);
+                timerEl.innerText = "--";
+                timerEl.style.color = "var(--accent)";
+                boxEl.classList.remove('done', 'active');
+            });
         }
     </script>
 </body>
