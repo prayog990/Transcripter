@@ -37,7 +37,7 @@
                     <i class="fas fa-cloud-upload-alt text-4xl mb-4 text-gray-600"></i>
                     <p class="text-sm font-bold" id="fileNameDisp">Drop file or Click</p>
                 </div>
-                <input type="file" id="fileInput" class="hidden" onchange="document.getElementById('fileNameDisp').innerText = this.files[0].name">
+                <input type="file" id="fileInput" class="hidden" onchange="handleNewFile(this)">
             </div>
 
             <div>
@@ -137,14 +137,54 @@
     <script>
         const HF_URL = "https://pryog-ai-ultra-transcribe.hf.space";
         let selectedFile = null;
-
         let pollingInterval = null;
 
-        async function startPipeline() {
-            const fileInput = document.getElementById('fileInput');
-            if(!fileInput.files[0]) return alert("Bhai ji, file select kijiye!");
+        function handleNewFile(input) {
+            if(!input.files[0]) return;
+            selectedFile = input.files[0];
+            document.getElementById('fileNameDisp').innerText = selectedFile.name;
             
-            selectedFile = fileInput.files[0];
+            // Reset Button and Pipeline for New File (v2.4)
+            const mainBtn = document.getElementById('mainProcessBtn');
+            mainBtn.innerText = "🚀 Start Pipeline";
+            mainBtn.disabled = false;
+            document.getElementById('setup-pipeline').classList.add('hidden');
+            resetPipelineUI();
+
+            if(selectedFile.type.startsWith('video')) {
+                document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
+            }
+        }
+
+        function resetPipelineUI() {
+            document.getElementById('global-status').innerText = "READY";
+            document.getElementById('global-status').className = "text-[9px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded";
+            const steps = ['upload', 'chunk', 'whisper', 'firebase', 'groq'];
+            steps.forEach(id => {
+                const timerEl = document.getElementById('t-' + id);
+                const boxEl = document.getElementById('step-' + id);
+                if(timerEl) {
+                    timerEl.innerText = "--";
+                    timerEl.style.color = "var(--accent)";
+                }
+                if(boxEl) boxEl.classList.remove('done', 'active');
+            });
+        }
+
+        async function startPipeline() {
+            const mainBtn = document.getElementById('mainProcessBtn');
+            
+            // If previous result exists, just switch page (v2.4)
+            if (mainBtn.innerText.includes("VIEW PREVIOUS")) {
+                document.getElementById('setup-page').classList.add('hidden');
+                document.getElementById('monitor-page').classList.remove('hidden');
+                return;
+            }
+
+            const fileInput = document.getElementById('fileInput');
+            if(!selectedFile && !fileInput.files[0]) return alert("Bhai ji, file select kijiye!");
+            
+            if(!selectedFile) selectedFile = fileInput.files[0];
             
             // Show Pipeline on First Page
             document.getElementById('setup-pipeline').classList.remove('hidden');
@@ -256,22 +296,20 @@
         }
 
         function goBack() {
-            // Pages switch karein
             document.getElementById('monitor-page').classList.add('hidden');
             document.getElementById('setup-page').classList.remove('hidden');
             
-            // Pipeline Status ko reset karein taki nayi file ke liye tayyar rahe
-            document.getElementById('global-status').innerText = "READY";
-            document.getElementById('global-status').className = "text-[9px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded";
+            // Update button if processing was complete (v2.4)
+            const mainBtn = document.getElementById('mainProcessBtn');
+            const globalStatus = document.getElementById('global-status').innerText;
             
-            const steps = ['upload', 'chunk', 'whisper', 'firebase', 'groq'];
-            steps.forEach(id => {
-                const timerEl = document.getElementById('t-' + id);
-                const boxEl = document.getElementById('step-' + id);
-                timerEl.innerText = "--";
-                timerEl.style.color = "var(--accent)";
-                boxEl.classList.remove('done', 'active');
-            });
+            if (globalStatus === "COMPLETED") {
+                mainBtn.innerText = "👁️ VIEW PREVIOUS TRANSCRIPT";
+                mainBtn.disabled = false;
+            } else {
+                mainBtn.innerText = "🚀 Start Pipeline";
+                mainBtn.disabled = false;
+            }
         }
     </script>
 </body>
