@@ -244,18 +244,38 @@
             const formData = new FormData();
             formData.append('file', selectedFile);
 
-            try {
-                // 1. Start Job
-                const res = await fetch(HF_URL + "/transcribe", { method: "POST", body: formData });
-                const { job_id } = await res.json();
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", HF_URL + "/transcribe", true);
 
-                // 2. Start Polling for Status
-                pollingInterval = setInterval(() => checkJobStatus(job_id), 2000);
+            // Real-time Upload Progress
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const pct = Math.floor((e.loaded / e.total) * 100);
+                    document.getElementById('global-status').innerText = `UPLOADING ${pct}%`;
+                }
+            };
 
-            } catch(e) {
-                alert("Upload Error: " + e.message);
-                document.getElementById('global-status').innerText = "UPLOAD FAILED";
-            }
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const response = JSON.parse(xhr.responseText);
+                    const job_id = response.job_id;
+                    
+                    // Upload finish: fix the timer and move to next
+                    stopLiveTimer();
+                    const finalUploadTime = document.getElementById('t-upload').innerText;
+                    document.getElementById('t-upload').setAttribute('data-final', finalUploadTime);
+                    
+                    document.getElementById('global-status').innerText = "SERVER RECEIVED";
+                    pollingInterval = setInterval(() => checkJobStatus(job_id), 1500);
+                }
+            };
+
+            xhr.onerror = () => {
+                alert("Bhai ji, upload fail ho gya!");
+                document.getElementById('global-status').innerText = "FAILED";
+            };
+
+            xhr.send(formData);
         }
 
         async function checkJobStatus(id) {
@@ -270,8 +290,15 @@
                 if(job.status === "firebase") { updateStep('whisper', 'done'); updateStep('firebase', 'active'); startLiveTimer('firebase'); }
                 if(job.status === "groq") { updateStep('firebase', 'done'); updateStep('groq', 'active'); startLiveTimer('groq'); }
 
-                // Lock final timings from backend
-                if(job.timings.upload) document.getElementById('t-upload').innerText = job.timings.upload + "s";
+                // Lock final timings but respect network upload time
+                if(job.timings.upload) {
+                    const netTime = document.getElementById('t-upload').getAttribute('data-final');
+                    if(netTime && netTime !== "--") {
+                        document.getElementById('t-upload').innerText = netTime; 
+                    } else {
+                        document.getElementById('t-upload').innerText = job.timings.upload + "s";
+                    }
+                }
                 if(job.timings.chunking && job.status !== "chunking") document.getElementById('t-chunk').innerText = job.timings.chunking + "s";
                 if(job.timings.whisper && job.status !== "whisper") document.getElementById('t-whisper').innerText = job.timings.whisper + "s";
                 if(job.timings.firebase && job.status !== "firebase") document.getElementById('t-firebase').innerText = job.timings.firebase + "s";
