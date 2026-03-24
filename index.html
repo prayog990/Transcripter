@@ -14,7 +14,7 @@
         .step-box { border: 1px solid #2a2a38; background: #111118; transition: all 0.3s; }
         .step-box.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,229,160,0.2); }
         .step-box.done { background: rgba(0,229,160,0.05); border-color: var(--accent); }
-        .timer-label { font-size: 9px; color: var(--accent); margin-top: 4px; font-weight: bold; }
+        .timer-label { font-size: 11px; color: var(--accent); font-weight: 800; font-family: 'JetBrains Mono', monospace; }
         .master-scroll { height: 400px; overflow-y: auto; border: 1px solid #2a2a38; border-radius: 12px; }
         .master-scroll::-webkit-scrollbar { width: 4px; }
         .master-scroll::-webkit-scrollbar-thumb { background: #2a2a38; border-radius: 10px; }
@@ -70,30 +70,49 @@
                     <span class="text-[10px] font-bold uppercase tracking-widest text-gray-500">Execution Status</span>
                     <span id="global-status" class="text-[9px] bg-orange-500/10 text-orange-400 px-2 py-1 rounded">SYNCING...</span>
                 </div>
-                <div class="flex items-center justify-between overflow-x-auto pb-4 gap-4" id="pipeline-row">
-                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-upload">
-                        <i class="fas fa-file-upload"></i> <span class="text-[8px] mt-2">UPLOAD</span>
-                        <div class="timer-label" id="t-upload">--</div>
+                <div class="flex flex-col items-stretch gap-1" id="pipeline-row">
+                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-upload">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-file-upload text-xs"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase">File Upload</span>
+                        </div>
+                        <div class="timer-label m-0 text-right" id="t-upload">--</div>
                     </div>
-                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-chunk">
-                        <i class="fas fa-cut"></i> <span class="text-[8px] mt-2">CHUNKING</span>
-                        <div class="timer-label" id="t-chunk">--</div>
+                    <div class="w-[1px] h-3 bg-[#2a2a38] ml-8"></div>
+                    
+                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-chunk">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-cut text-xs"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase">Chunking</span>
+                        </div>
+                        <div class="timer-label m-0 text-right" id="t-chunk">--</div>
                     </div>
-                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-whisper">
-                        <i class="fas fa-brain"></i> <span class="text-[8px] mt-2">WHISPER</span>
-                        <div class="timer-label" id="t-whisper">--</div>
+                    <div class="w-[1px] h-3 bg-[#2a2a38] ml-8"></div>
+                    
+                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-whisper">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-brain text-xs"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase">Whisper AI</span>
+                        </div>
+                        <div class="timer-label m-0 text-right" id="t-whisper">--</div>
                     </div>
-                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-firebase">
-                        <i class="fas fa-database"></i> <span class="text-[8px] mt-2">FIREBASE</span>
-                        <div class="timer-label" id="t-firebase">--</div>
+                    <div class="w-[1px] h-3 bg-[#2a2a38] ml-8"></div>
+                    
+                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-firebase">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-database text-xs"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase">Firebase Memory</span>
+                        </div>
+                        <div class="timer-label m-0 text-right" id="t-firebase">--</div>
                     </div>
-                    <div class="w-8 h-[1px] bg-[#2a2a38]"></div>
-                    <div class="step-box p-4 rounded-2xl flex flex-col items-center min-w-[90px]" id="step-groq">
-                        <i class="fas fa-bolt"></i> <span class="text-[8px] mt-2">GROQ AI</span>
-                        <div class="timer-label" id="t-groq">--</div>
+                    <div class="w-[1px] h-3 bg-[#2a2a38] ml-8"></div>
+                    
+                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-groq">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-bolt text-xs"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase">Groq Refinement</span>
+                        </div>
+                        <div class="timer-label m-0 text-right" id="t-groq">--</div>
                     </div>
                 </div>
             </div>
