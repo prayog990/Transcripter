@@ -24,18 +24,14 @@
 <body class="min-h-screen p-4">
 
     <!-- PAGE 1: SETUP -->
-    <div id="setup-page" class="max-w-xl mx-auto mt-10 space-y-8">
+    <div id="setup-page" class="max-w-xl mx-auto mt-1 space-y-8">
         <header class="text-center flex flex-col items-center">
-            <!-- Gurudev Photo (v2.5) -->
-            <div class="mb-6 relative">
-                <div class="w-20 h-20 rounded-full border-2 border-[var(--accent)] p-1 shadow-[0_0_20px_rgba(0,229,160,0.4)] overflow-hidden bg-[#111118]">
-                    <img src="https://drive.google.com/uc?export=view&id=1C_zDrKi3Jto6coWwtM9RySOkCow9uAO1" 
-                         alt="Gurudev" 
-                         class="w-full h-full rounded-full object-cover scale-110">
-                </div>
-                <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[var(--accent)] text-black text-[7px] font-bold px-2 py-0.5 rounded-full uppercase tracking-tighter shadow-lg">
-                    Blessings
-                </div>
+            <!-- Gurudev Full Photo (v2.5.1 Fixed) -->
+            <div class="mb-2">
+                <img src="https://lh3.googleusercontent.com/d/1C_zDrKi3Jto6coWwtM9RySOkCow9uAO1" 
+                     alt="Gurudev" 
+                     class="h-16 w-auto object-contain"
+                     onerror="this.src='https://www.freeiconspng.com/uploads/no-image-icon-4.png'; console.log('Bhai ji, Drive link is still blocked');">
             </div>
             <h1 class="text-3xl font-extrabold font-['Syne']">AI Transcribe <span class="text-[var(--accent)]">Ultra</span></h1>
             <p class="text-xs text-gray-500 mt-2 uppercase tracking-widest">Self-Learning v2.0</p>
@@ -149,6 +145,27 @@
         const HF_URL = "https://pryog-ai-ultra-transcribe.hf.space";
         let selectedFile = null;
         let pollingInterval = null;
+        let liveInterval = null;
+        let activeStepId = null;
+        let stepStartTime = 0;
+
+        function startLiveTimer(stepId) {
+            if (activeStepId === stepId) return;
+            clearInterval(liveInterval);
+            activeStepId = stepId;
+            stepStartTime = Date.now();
+            
+            liveInterval = setInterval(() => {
+                const elapsed = ((Date.now() - stepStartTime) / 1000).toFixed(1);
+                const timerEl = document.getElementById('t-' + stepId);
+                if (timerEl) timerEl.innerText = elapsed + "s";
+            }, 100);
+        }
+
+        function stopLiveTimer() {
+            clearInterval(liveInterval);
+            activeStepId = null;
+        }
 
         function handleNewFile(input) {
             if(!input.files[0]) return;
@@ -201,6 +218,9 @@
             document.getElementById('setup-pipeline').classList.remove('hidden');
             document.getElementById('mainProcessBtn').disabled = true;
             document.getElementById('mainProcessBtn').innerText = "⚙️ PROCESSING...";
+            
+            updateStep('upload', 'active');
+            startLiveTimer('upload');
 
             const formData = new FormData();
             formData.append('file', selectedFile);
@@ -224,17 +244,18 @@
                 const res = await fetch(HF_URL + "/status/" + id);
                 const job = await res.json();
 
-                // Update UI based on current step
-                if(job.status === "chunking") updateStep('upload', 'done');
-                if(job.status === "whisper") updateStep('chunk', 'done');
-                if(job.status === "firebase") updateStep('whisper', 'done');
-                if(job.status === "groq") updateStep('firebase', 'done');
+                // Dynamic Live Timer Switching
+                if(job.status === "uploading") { updateStep('upload', 'active'); startLiveTimer('upload'); }
+                if(job.status === "chunking") { updateStep('upload', 'done'); updateStep('chunk', 'active'); startLiveTimer('chunk'); }
+                if(job.status === "whisper") { updateStep('chunk', 'done'); updateStep('whisper', 'active'); startLiveTimer('whisper'); }
+                if(job.status === "firebase") { updateStep('whisper', 'done'); updateStep('firebase', 'active'); startLiveTimer('firebase'); }
+                if(job.status === "groq") { updateStep('firebase', 'done'); updateStep('groq', 'active'); startLiveTimer('groq'); }
 
-                // Update Timings if available
+                // Lock final timings from backend
                 if(job.timings.upload) document.getElementById('t-upload').innerText = job.timings.upload + "s";
-                if(job.timings.chunking) document.getElementById('t-chunk').innerText = job.timings.chunking + "s";
-                if(job.timings.whisper) document.getElementById('t-whisper').innerText = job.timings.whisper + "s";
-                if(job.timings.firebase) document.getElementById('t-firebase').innerText = job.timings.firebase + "s";
+                if(job.timings.chunking && job.status !== "chunking") document.getElementById('t-chunk').innerText = job.timings.chunking + "s";
+                if(job.timings.whisper && job.status !== "whisper") document.getElementById('t-whisper').innerText = job.timings.whisper + "s";
+                if(job.timings.firebase && job.status !== "firebase") document.getElementById('t-firebase').innerText = job.timings.firebase + "s";
                 if(job.timings.groq) {
                     const gVal = job.timings.groq;
                     document.getElementById('t-groq').innerText = (typeof gVal === 'number') ? gVal + "s" : gVal;
@@ -243,6 +264,7 @@
 
                 if(job.status === "completed") {
                     clearInterval(pollingInterval);
+                    stopLiveTimer();
                     updateStep('groq', 'done');
                     
                     // Switch to Result Page after completion
