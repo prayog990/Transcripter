@@ -12,8 +12,10 @@
         body { font-family: 'JetBrains Mono', monospace; background: var(--bg); color: #e8e8f0; }
         .setup-card { background: rgba(17, 17, 24, 0.9); border: 1px solid #2a2a38; }
         .step-box { border: 1px solid #2a2a38; background: #111118; transition: all 0.3s; }
-        .step-box.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,229,160,0.2); }
-        .step-box.done { background: rgba(0,229,160,0.05); border-color: var(--accent); }
+        .step-box.active { border-color: var(--accent); box-shadow: 0 0 15px rgba(0,229,160,0.2); animation: pulse 1.5s infinite; }
+        .step-box.done { background: rgba(0,229,160,0.05); border-color: var(--accent); animation: none; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
+        .total-card { background: linear-gradient(90deg, #111118, #1a1a25); border: 1px solid #2a2a38; border-radius: 20px; }
         .timer-label { font-size: 11px; color: var(--accent); font-weight: 800; font-family: 'JetBrains Mono', monospace; }
         .master-scroll { height: 400px; overflow-y: auto; border: 1px solid #2a2a38; border-radius: 12px; }
         .master-scroll::-webkit-scrollbar { width: 4px; }
@@ -115,6 +117,16 @@
                         <div class="timer-label m-0 text-right" id="t-groq">--</div>
                     </div>
                 </div>
+                <!-- v2.5 Total Time Card -->
+                <div class="total-card mt-6 p-4 flex justify-between items-center border-l-4 border-l-[var(--accent)]">
+                    <div>
+                        <p class="text-[8px] text-gray-500 uppercase tracking-widest font-bold">Total Execution Time</p>
+                        <p class="text-[10px] text-gray-400 mt-1">End-to-End Analysis</p>
+                    </div>
+                    <div class="text-right">
+                        <span id="total-clock" class="text-2xl font-black text-[var(--accent)] font-['JetBrains_Mono']">0.0s</span>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -167,6 +179,20 @@
         let liveInterval = null;
         let activeStepId = null;
         let stepStartTime = 0;
+        let totalStartTime = 0;
+        let totalClockInterval = null;
+
+        function startTotalClock() {
+            totalStartTime = Date.now();
+            totalClockInterval = setInterval(() => {
+                const elapsed = ((Date.now() - totalStartTime) / 1000).toFixed(1);
+                document.getElementById('total-clock').innerText = elapsed + "s";
+            }, 100);
+        }
+
+        function stopTotalClock() {
+            clearInterval(totalClockInterval);
+        }
 
         function startLiveTimer(stepId) {
             if (activeStepId === stepId) return;
@@ -240,7 +266,7 @@
             
             updateStep('upload', 'active');
             startLiveTimer('upload');
-
+            startTotalClock(); // v2.5 Total Clock Start
             const formData = new FormData();
             formData.append('file', selectedFile);
 
@@ -283,12 +309,27 @@
                 const res = await fetch(HF_URL + "/status/" + id);
                 const job = await res.json();
 
-                // Dynamic Live Timer Switching
-                if(job.status === "uploading") { updateStep('upload', 'active'); startLiveTimer('upload'); }
-                if(job.status === "chunking") { updateStep('upload', 'done'); updateStep('chunk', 'active'); startLiveTimer('chunk'); }
-                if(job.status === "whisper") { updateStep('chunk', 'done'); updateStep('whisper', 'active'); startLiveTimer('whisper'); }
-                if(job.status === "firebase") { updateStep('whisper', 'done'); updateStep('firebase', 'active'); startLiveTimer('firebase'); }
-                if(job.status === "groq") { updateStep('firebase', 'done'); updateStep('groq', 'active'); startLiveTimer('groq'); }
+                // v2.5 Predictive Logic: Trigger live timers ahead of server response
+                if(job.status === "uploading") { 
+                    updateStep('upload', 'active'); 
+                    startLiveTimer('upload'); 
+                }
+                if(job.status === "chunking") { 
+                    if(activeStepId === 'upload') { updateStep('upload', 'done'); startLiveTimer('chunk'); }
+                    updateStep('chunk', 'active');
+                }
+                if(job.status === "whisper") { 
+                    if(activeStepId === 'chunk' || activeStepId === 'upload') { updateStep('chunk', 'done'); startLiveTimer('whisper'); }
+                    updateStep('whisper', 'active');
+                }
+                if(job.status === "firebase") { 
+                    if(activeStepId === 'whisper') { updateStep('whisper', 'done'); startLiveTimer('firebase'); }
+                    updateStep('firebase', 'active');
+                }
+                if(job.status === "groq") { 
+                    if(activeStepId === 'firebase') { updateStep('firebase', 'done'); startLiveTimer('groq'); }
+                    updateStep('groq', 'active');
+                }
 
                 // Lock final timings but respect network upload time
                 if(job.timings.upload) {
@@ -311,6 +352,7 @@
                 if(job.status === "completed") {
                     clearInterval(pollingInterval);
                     stopLiveTimer();
+                    stopTotalClock(); // v2.5 Total Clock Stop
                     updateStep('groq', 'done');
                     
                     // Switch to Result Page after completion
