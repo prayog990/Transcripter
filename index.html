@@ -90,6 +90,16 @@
                         <div class="timer-label m-0 text-right" id="t-chunk">--</div>
                     </div>
                     <div class="w-[1px] h-3 bg-[#2a2a38] ml-8"></div>
+
+                    <!-- v2.7 Audio Cleaning Step -->
+                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-denoise">
+                        <div class="flex items-center gap-4">
+                            <i class="fas fa-broom text-xs"></i>
+                            <span class="text-[9px] font-bold tracking-widest uppercase">Audio Cleaning</span>
+                        </div>
+                        <div class="timer-label m-0 text-right" id="t-denoise">--</div>
+                    </div>
+                    <div class="w-[1px] h-3 bg-[#2a2a38] ml-8"></div>
                     
                     <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-whisper">
                         <div class="flex items-center gap-4">
@@ -318,8 +328,12 @@
                     if(activeStepId === 'upload') { updateStep('upload', 'done'); startLiveTimer('chunk'); }
                     updateStep('chunk', 'active');
                 }
+                if(job.status === "denoising") { 
+                    if(activeStepId === 'chunk') { updateStep('chunk', 'done'); startLiveTimer('denoise'); }
+                    updateStep('denoise', 'active');
+                }
                 if(job.status === "whisper") { 
-                    if(activeStepId === 'chunk' || activeStepId === 'upload') { updateStep('chunk', 'done'); startLiveTimer('whisper'); }
+                    if(activeStepId === 'denoise' || activeStepId === 'chunk') { updateStep('denoise', 'done'); startLiveTimer('whisper'); }
                     updateStep('whisper', 'active');
                 }
                 if(job.status === "firebase") { 
