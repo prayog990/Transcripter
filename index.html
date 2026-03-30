@@ -57,8 +57,8 @@
                 </select>
             </div>
 
-            <!-- v2.8 Noise Toggle Checkbox -->
-            <div class="flex items-center gap-4 p-5 bg-[#0d0d14] border border-[#2a2a38] rounded-2xl cursor-pointer hover:border-[var(--accent2)] transition-all" onclick="const c = document.getElementById('noiseToggle'); c.checked = !c.checked;">
+            <!-- v2.8.1 Improved Noise Toggle -->
+            <div class="flex items-center gap-4 p-5 bg-[#0d0d14] border border-[#2a2a38] rounded-2xl cursor-pointer hover:border-[var(--accent2)] transition-all" onclick="document.getElementById('noiseToggle').click()">
                 <input type="checkbox" id="noiseToggle" class="w-5 h-5 accent-[var(--accent)] cursor-pointer" onclick="event.stopPropagation()">
                 <div>
                     <p class="text-[10px] font-black uppercase tracking-tighter text-gray-300">AI Noise Removal</p>
@@ -334,7 +334,7 @@
                 const res = await fetch(HF_URL + "/status/" + id);
                 const job = await res.json();
 
-                // v2.5 Predictive Logic: Trigger live timers ahead of server response
+                // v2.8.1 Fix: Proper Conditional Steps
                 if(job.status === "uploading") { 
                     updateStep('upload', 'active'); 
                     startLiveTimer('upload'); 
@@ -348,11 +348,10 @@
                     updateStep('denoise', 'active');
                 }
                 if(job.status === "whisper") { 
-                    if(activeStepId === 'denoise' || activeStepId === 'chunk') { updateStep('denoise', 'done'); startLiveTimer('whisper'); }
-                // Lock final timings but respect network upload time
-                if(job.timings.denoise && job.status !== "denoising") document.getElementById('t-denoise').innerText = job.timings.denoise + "s";
-                
-                if(job.timings.upload) {
+                    const prevStep = document.getElementById('step-denoise').classList.contains('hidden') ? 'chunk' : 'denoise';
+                    if(activeStepId === prevStep) { updateStep(prevStep, 'done'); startLiveTimer('whisper'); }
+                    updateStep('whisper', 'active');
+                }
                 if(job.status === "firebase") { 
                     if(activeStepId === 'whisper') { updateStep('whisper', 'done'); startLiveTimer('firebase'); }
                     updateStep('firebase', 'active');
@@ -362,42 +361,36 @@
                     updateStep('groq', 'active');
                 }
 
-                // Lock final timings but respect network upload time
-                if(job.timings.upload) {
-                    const netTime = document.getElementById('t-upload').getAttribute('data-final');
-                    if(netTime && netTime !== "--") {
-                        document.getElementById('t-upload').innerText = netTime; 
-                    } else {
-                        document.getElementById('t-upload').innerText = job.timings.upload + "s";
-                    }
-                }
+                // Lock final timings
+                if(job.timings.denoise && job.status !== "denoising") document.getElementById('t-denoise').innerText = job.timings.denoise + "s";
                 if(job.timings.chunking && job.status !== "chunking") document.getElementById('t-chunk').innerText = job.timings.chunking + "s";
                 if(job.timings.whisper && job.status !== "whisper") document.getElementById('t-whisper').innerText = job.timings.whisper + "s";
                 if(job.timings.firebase && job.status !== "firebase") document.getElementById('t-firebase').innerText = job.timings.firebase + "s";
+                
+                if(job.timings.upload) {
+                    const netTime = document.getElementById('t-upload').getAttribute('data-final');
+                    document.getElementById('t-upload').innerText = (netTime && netTime !== "--") ? netTime : job.timings.upload + "s";
+                }
+
                 if(job.timings.groq) {
                     const gVal = job.timings.groq;
                     document.getElementById('t-groq').innerText = (typeof gVal === 'number') ? gVal + "s" : gVal;
-                    if(typeof gVal !== 'number') document.getElementById('t-groq').style.color = "red";
                 }
 
                 if(job.status === "completed") {
                     clearInterval(pollingInterval);
                     stopLiveTimer();
-                    stopTotalClock(); // v2.5 Total Clock Stop
+                    stopTotalClock();
                     updateStep('groq', 'done');
                     
-                    // Switch to Result Page after completion
                     setTimeout(() => {
                         document.getElementById('setup-page').classList.add('hidden');
                         document.getElementById('monitor-page').classList.remove('hidden');
                         document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
-                        
                         document.getElementById('global-status').innerText = "COMPLETED";
                         document.getElementById('global-status').className = "text-[9px] bg-green-500/10 text-green-400 px-2 py-1 rounded";
                         renderMasterResult(job.result.full_text, job.result.segments);
                     }, 500);
-
-                    if(job.errors.length > 0) alert("Bhai ji, Groq me kuch issue tha: " + job.errors.join(", "));
                 }
 
                 if(job.status === "failed") {
