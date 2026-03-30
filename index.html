@@ -57,9 +57,13 @@
                 </select>
             </div>
 
-            <div>
-                <label class="text-[10px] uppercase text-gray-500 mb-3 block">3. Domain Vocab</label>
-                <input type="text" placeholder="Add custom words..." class="w-full bg-[#111118] border border-[#2a2a38] p-4 rounded-xl text-sm outline-none">
+            <!-- v2.8 Noise Toggle Checkbox -->
+            <div class="flex items-center gap-4 p-5 bg-[#0d0d14] border border-[#2a2a38] rounded-2xl cursor-pointer hover:border-[var(--accent2)] transition-all" onclick="const c = document.getElementById('noiseToggle'); c.checked = !c.checked;">
+                <input type="checkbox" id="noiseToggle" class="w-5 h-5 accent-[var(--accent)] cursor-pointer" onclick="event.stopPropagation()">
+                <div>
+                    <p class="text-[10px] font-black uppercase tracking-tighter text-gray-300">AI Noise Removal</p>
+                    <p class="text-[8px] text-gray-600 uppercase">Recommended for noisy recordings</p>
+                </div>
             </div>
 
             <button onclick="startPipeline()" id="mainProcessBtn" class="w-full bg-[var(--accent)] text-black py-5 rounded-2xl font-black uppercase tracking-tighter hover:scale-[1.02] transition-all shadow-lg shadow-green-500/20">
@@ -89,10 +93,10 @@
                         </div>
                         <div class="timer-label m-0 text-right" id="t-chunk">--</div>
                     </div>
-                    <div class="w-[1px] h-3 bg-[#2a2a38] ml-8"></div>
+                    <div class="w-[1px] h-3 bg-[#2a2a38] ml-8 hidden" id="denoise-line"></div>
 
-                    <!-- v2.7 Audio Cleaning Step -->
-                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full" id="step-denoise">
+                    <!-- v2.8 Audio Cleaning Step (Conditional) -->
+                    <div class="step-box p-3 px-5 rounded-xl flex items-center justify-between w-full hidden" id="step-denoise">
                         <div class="flex items-center gap-4">
                             <i class="fas fa-broom text-xs"></i>
                             <span class="text-[9px] font-bold tracking-widest uppercase">Audio Cleaning</span>
@@ -276,8 +280,19 @@
             
             updateStep('upload', 'active');
             startLiveTimer('upload');
-            startTotalClock(); // v2.5 Total Clock Start
+            startTotalClock();
+
+            const noiseOn = document.getElementById('noiseToggle').checked;
+            if(noiseOn) {
+                document.getElementById('step-denoise').classList.remove('hidden');
+                document.getElementById('denoise-line').classList.remove('hidden');
+            } else {
+                document.getElementById('step-denoise').classList.add('hidden');
+                document.getElementById('denoise-line').classList.add('hidden');
+            }
+
             const formData = new FormData();
+            formData.append('denoise', noiseOn); // Send signal to backend
             formData.append('file', selectedFile);
 
             const xhr = new XMLHttpRequest();
@@ -334,8 +349,10 @@
                 }
                 if(job.status === "whisper") { 
                     if(activeStepId === 'denoise' || activeStepId === 'chunk') { updateStep('denoise', 'done'); startLiveTimer('whisper'); }
-                    updateStep('whisper', 'active');
-                }
+                // Lock final timings but respect network upload time
+                if(job.timings.denoise && job.status !== "denoising") document.getElementById('t-denoise').innerText = job.timings.denoise + "s";
+                
+                if(job.timings.upload) {
                 if(job.status === "firebase") { 
                     if(activeStepId === 'whisper') { updateStep('whisper', 'done'); startLiveTimer('firebase'); }
                     updateStep('firebase', 'active');
