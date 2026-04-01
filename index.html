@@ -381,10 +381,17 @@
             xhr.send(formData);
         }
 
-        async function checkJobStatus(id) {
+async function checkJobStatus(id) {
             try {
                 const res = await fetch(HF_URL + "/status/" + id);
                 const job = await res.json();
+
+                // v3.5 Diagnostic: Show last error if any
+                if(job.errors && job.errors.length > 0) {
+                    const lastErr = job.errors[job.errors.length - 1];
+                    document.getElementById('global-status').innerText = "⚠️ " + lastErr.toUpperCase();
+                    document.getElementById('global-status').className = "text-[7px] bg-red-500/20 text-red-400 px-2 py-1 rounded leading-tight max-w-[150px]";
+                }
 
                 // v3.2 Logical Step Flow
                 if(job.status === "uploading") { updateStep('upload', 'active'); startLiveTimer('upload'); }
