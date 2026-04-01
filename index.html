@@ -199,13 +199,13 @@
         // v3.1 Resume Logic on Page Load
         window.onload = function() {
             const savedJobId = localStorage.getItem('activeJobId');
+            const savedStartTime = localStorage.getItem('totalStartTime');
             if (savedJobId) {
                 document.getElementById('setup-pipeline').classList.remove('hidden');
                 document.getElementById('mainProcessBtn').disabled = true;
                 document.getElementById('mainProcessBtn').innerText = "⚙️ RECOVERING JOB...";
-                // v3.1.1: Pre-set basic steps for better UI during recovery
                 updateStep('upload', 'done'); 
-                startTotalClock();
+                startTotalClock(savedStartTime ? parseInt(savedStartTime) : null);
                 pollingInterval = setInterval(() => checkJobStatus(savedJobId), 1500);
             }
         };
@@ -217,8 +217,11 @@
             }
         };
 
-        function startTotalClock() {
-            totalStartTime = Date.now();
+        function startTotalClock(savedStartTime = null) {
+            totalStartTime = savedStartTime || Date.now();
+            if (!savedStartTime) localStorage.setItem('totalStartTime', totalStartTime);
+            
+            clearInterval(totalClockInterval);
             totalClockInterval = setInterval(() => {
                 const elapsed = ((Date.now() - totalStartTime) / 1000).toFixed(1);
                 document.getElementById('total-clock').innerText = elapsed + "s";
@@ -356,11 +359,8 @@
                 const res = await fetch(HF_URL + "/status/" + id);
                 const job = await res.json();
 
-                // v2.8.1 Fix: Proper Conditional Steps
-                if(job.status === "uploading") { 
-                    updateStep('upload', 'active'); 
-                    startLiveTimer('upload'); 
-                }
+                // v3.2 Logical Step Flow
+                if(job.status === "uploading") { updateStep('upload', 'active'); startLiveTimer('upload'); }
                 if(job.status === "chunking") { 
                     if(activeStepId === 'upload') { updateStep('upload', 'done'); startLiveTimer('chunk'); }
                     updateStep('chunk', 'active');
@@ -383,7 +383,7 @@
                     updateStep('groq', 'active');
                 }
 
-                // Lock final timings
+                // Final Timings Display
                 if(job.timings.denoise && job.status !== "denoising") document.getElementById('t-denoise').innerText = job.timings.denoise + "s";
                 if(job.timings.chunking && job.status !== "chunking") document.getElementById('t-chunk').innerText = job.timings.chunking + "s";
                 if(job.timings.whisper && job.status !== "whisper") document.getElementById('t-whisper').innerText = job.timings.whisper + "s";
@@ -393,14 +393,14 @@
                     const netTime = document.getElementById('t-upload').getAttribute('data-final');
                     document.getElementById('t-upload').innerText = (netTime && netTime !== "--") ? netTime : job.timings.upload + "s";
                 }
-
                 if(job.timings.groq) {
-                    const gVal = job.timings.groq;
-                    document.getElementById('t-groq').innerText = (typeof gVal === 'number') ? gVal + "s" : gVal;
+                    document.getElementById('t-groq').innerText = (typeof job.timings.groq === 'number') ? job.timings.groq + "s" : job.timings.groq;
                 }
-if(job.status === "completed") {
+
+                if(job.status === "completed") {
                     clearInterval(pollingInterval);
-                    localStorage.removeItem('activeJobId'); 
+                    localStorage.removeItem('activeJobId');
+                    localStorage.removeItem('totalStartTime');
                     stopLiveTimer();
                     stopTotalClock();
                     updateStep('groq', 'done');
@@ -408,14 +408,8 @@ if(job.status === "completed") {
                     setTimeout(() => {
                         document.getElementById('setup-page').classList.add('hidden');
                         document.getElementById('monitor-page').classList.remove('hidden');
-                        
-                        // v3.1.1: Fix crash if selectedFile is missing after refresh
-                        if (selectedFile) {
-                            document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
-                        } else {
-                            console.log("Bhai ji, file is missing after refresh, showing results only.");
-                            document.getElementById('mediaPlayer').parentElement.classList.add('hidden');
-                        }
+                        if (selectedFile) document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
+                        else document.getElementById('mediaPlayer').parentElement.classList.add('hidden');
                         
                         document.getElementById('global-status').innerText = "COMPLETED";
                         document.getElementById('global-status').className = "text-[9px] bg-green-500/10 text-green-400 px-2 py-1 rounded";
@@ -425,7 +419,8 @@ if(job.status === "completed") {
 
                 if(job.status === "failed") {
                     clearInterval(pollingInterval);
-                    document.getElementById('global-status').innerText = "TASK FAILED";
+                    localStorage.removeItem('activeJobId');
+                    localStorage.removeItem('totalStartTime');
                     alert("System Error: " + job.errors.join("\n"));
                 }
             } catch(e) { console.error("Polling error", e); }
