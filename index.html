@@ -196,6 +196,25 @@
         let totalStartTime = 0;
         let totalClockInterval = null;
 
+        // v3.1 Resume Logic on Page Load
+        window.onload = function() {
+            const savedJobId = localStorage.getItem('activeJobId');
+            if (savedJobId) {
+                document.getElementById('setup-pipeline').classList.remove('hidden');
+                document.getElementById('mainProcessBtn').disabled = true;
+                document.getElementById('mainProcessBtn').innerText = "⚙️ RECOVERING JOB...";
+                startTotalClock();
+                pollingInterval = setInterval(() => checkJobStatus(savedJobId), 1500);
+            }
+        };
+
+        // Confirm before refresh/exit
+        window.onbeforeunload = function() {
+            if (activeStepId || localStorage.getItem('activeJobId')) {
+                return "Bhai ji, processing chal rahi hai. Kya aap sach mein bahar jana chahte hain?";
+            }
+        };
+
         function startTotalClock() {
             totalStartTime = Date.now();
             totalClockInterval = setInterval(() => {
@@ -310,6 +329,7 @@
                 if (xhr.status === 200) {
                     const response = JSON.parse(xhr.responseText);
                     const job_id = response.job_id;
+                    localStorage.setItem('activeJobId', job_id); // Save for recovery
                     
                     // Upload finish: fix the timer and move to next
                     stopLiveTimer();
@@ -379,6 +399,7 @@
 
                 if(job.status === "completed") {
                     clearInterval(pollingInterval);
+                    localStorage.removeItem('activeJobId'); // Clear on success
                     stopLiveTimer();
                     stopTotalClock();
                     updateStep('groq', 'done');
