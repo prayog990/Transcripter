@@ -203,6 +203,8 @@
                 document.getElementById('setup-pipeline').classList.remove('hidden');
                 document.getElementById('mainProcessBtn').disabled = true;
                 document.getElementById('mainProcessBtn').innerText = "⚙️ RECOVERING JOB...";
+                // v3.1.1: Pre-set basic steps for better UI during recovery
+                updateStep('upload', 'done'); 
                 startTotalClock();
                 pollingInterval = setInterval(() => checkJobStatus(savedJobId), 1500);
             }
@@ -396,10 +398,9 @@
                     const gVal = job.timings.groq;
                     document.getElementById('t-groq').innerText = (typeof gVal === 'number') ? gVal + "s" : gVal;
                 }
-
-                if(job.status === "completed") {
+if(job.status === "completed") {
                     clearInterval(pollingInterval);
-                    localStorage.removeItem('activeJobId'); // Clear on success
+                    localStorage.removeItem('activeJobId'); 
                     stopLiveTimer();
                     stopTotalClock();
                     updateStep('groq', 'done');
@@ -407,7 +408,15 @@
                     setTimeout(() => {
                         document.getElementById('setup-page').classList.add('hidden');
                         document.getElementById('monitor-page').classList.remove('hidden');
-                        document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
+                        
+                        // v3.1.1: Fix crash if selectedFile is missing after refresh
+                        if (selectedFile) {
+                            document.getElementById('mediaPlayer').src = URL.createObjectURL(selectedFile);
+                        } else {
+                            console.log("Bhai ji, file is missing after refresh, showing results only.");
+                            document.getElementById('mediaPlayer').parentElement.classList.add('hidden');
+                        }
+                        
                         document.getElementById('global-status').innerText = "COMPLETED";
                         document.getElementById('global-status').className = "text-[9px] bg-green-500/10 text-green-400 px-2 py-1 rounded";
                         renderMasterResult(job.result.full_text, job.result.segments);
