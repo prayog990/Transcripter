@@ -196,14 +196,24 @@
         let totalStartTime = 0;
         let totalClockInterval = null;
 
-        // v3.1 Resume Logic on Page Load
+        // v3.2 Enhanced Resume Logic
         window.onload = function() {
             const savedJobId = localStorage.getItem('activeJobId');
+            const savedNoise = localStorage.getItem('noiseOn') === 'true';
             const savedStartTime = localStorage.getItem('totalStartTime');
+
             if (savedJobId) {
+                // Restore Checkbox & UI State
+                document.getElementById('noiseToggle').checked = savedNoise;
                 document.getElementById('setup-pipeline').classList.remove('hidden');
                 document.getElementById('mainProcessBtn').disabled = true;
                 document.getElementById('mainProcessBtn').innerText = "⚙️ RECOVERING JOB...";
+
+                if(savedNoise) {
+                    document.getElementById('step-denoise').classList.remove('hidden');
+                    document.getElementById('denoise-line').classList.remove('hidden');
+                }
+
                 updateStep('upload', 'done'); 
                 startTotalClock(savedStartTime ? parseInt(savedStartTime) : null);
                 pollingInterval = setInterval(() => checkJobStatus(savedJobId), 1500);
@@ -307,6 +317,7 @@
             startTotalClock();
 
             const noiseOn = document.getElementById('noiseToggle').checked;
+            localStorage.setItem('noiseOn', noiseOn); // Save toggle state for recovery
             if(noiseOn) {
                 document.getElementById('step-denoise').classList.remove('hidden');
                 document.getElementById('denoise-line').classList.remove('hidden');
@@ -401,6 +412,7 @@
                     clearInterval(pollingInterval);
                     localStorage.removeItem('activeJobId');
                     localStorage.removeItem('totalStartTime');
+                    localStorage.removeItem('noiseOn');
                     stopLiveTimer();
                     stopTotalClock();
                     updateStep('groq', 'done');
