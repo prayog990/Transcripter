@@ -196,27 +196,41 @@
         let totalStartTime = 0;
         let totalClockInterval = null;
 
-        // v3.2 Enhanced Resume Logic
+        // v3.3 Supreme Persistence Logic
         window.onload = function() {
             const savedJobId = localStorage.getItem('activeJobId');
+            const savedStatus = localStorage.getItem('jobStatus');
+            const savedFileName = localStorage.getItem('lastFileName');
             const savedNoise = localStorage.getItem('noiseOn') === 'true';
             const savedStartTime = localStorage.getItem('totalStartTime');
 
+            if (savedFileName) document.getElementById('fileNameDisp').innerText = savedFileName;
+
             if (savedJobId) {
-                // Restore Checkbox & UI State
                 document.getElementById('noiseToggle').checked = savedNoise;
                 document.getElementById('setup-pipeline').classList.remove('hidden');
-                document.getElementById('mainProcessBtn').disabled = true;
-                document.getElementById('mainProcessBtn').innerText = "⚙️ RECOVERING JOB...";
-
+                
                 if(savedNoise) {
                     document.getElementById('step-denoise').classList.remove('hidden');
                     document.getElementById('denoise-line').classList.remove('hidden');
                 }
 
-                updateStep('upload', 'done'); 
-                startTotalClock(savedStartTime ? parseInt(savedStartTime) : null);
-                pollingInterval = setInterval(() => checkJobStatus(savedJobId), 1500);
+                if (savedStatus === 'completed') {
+                    const mainBtn = document.getElementById('mainProcessBtn');
+                    mainBtn.innerText = "👁️ VIEW PREVIOUS TRANSCRIPT";
+                    mainBtn.disabled = false;
+                    document.getElementById('global-status').innerText = "COMPLETED";
+                    document.getElementById('global-status').className = "text-[9px] bg-green-500/10 text-green-400 px-2 py-1 rounded";
+                    
+                    // Mark all steps done
+                    ['upload', 'chunk', 'denoise', 'whisper', 'firebase', 'groq'].forEach(s => updateStep(s, 'done'));
+                } else {
+                    document.getElementById('mainProcessBtn').disabled = true;
+                    document.getElementById('mainProcessBtn').innerText = "⚙️ RECOVERING JOB...";
+                    updateStep('upload', 'done'); 
+                    startTotalClock(savedStartTime ? parseInt(savedStartTime) : null);
+                    pollingInterval = setInterval(() => checkJobStatus(savedJobId), 1500);
+                }
             }
         };
 
@@ -264,6 +278,7 @@
             if(!input.files[0]) return;
             selectedFile = input.files[0];
             document.getElementById('fileNameDisp').innerText = selectedFile.name;
+            localStorage.setItem('lastFileName', selectedFile.name);
             
             // Reset Button and Pipeline for New File (v2.4)
             const mainBtn = document.getElementById('mainProcessBtn');
@@ -345,7 +360,8 @@
                 if (xhr.status === 200) {
                     const response = JSON.parse(xhr.responseText);
                     const job_id = response.job_id;
-                    localStorage.setItem('activeJobId', job_id); // Save for recovery
+                    localStorage.setItem('activeJobId', job_id);
+                    localStorage.setItem('jobStatus', 'processing');
                     
                     // Upload finish: fix the timer and move to next
                     stopLiveTimer();
@@ -410,9 +426,8 @@
 
                 if(job.status === "completed") {
                     clearInterval(pollingInterval);
-                    localStorage.removeItem('activeJobId');
-                    localStorage.removeItem('totalStartTime');
-                    localStorage.removeItem('noiseOn');
+                    localStorage.setItem('jobStatus', 'completed');
+                    localStorage.setItem('lastResult', JSON.stringify(job.result));
                     stopLiveTimer();
                     stopTotalClock();
                     updateStep('groq', 'done');
